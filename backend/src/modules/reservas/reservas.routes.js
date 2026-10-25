@@ -26,21 +26,21 @@ router.get(
 // Gestión de laboratorios y franjas horarias (CU16 / HU16 - Admin/Encargado)
 router.post(
   '/laboratorios',
-  permitirRoles('ENCARGADO', 'ADMINISTRADOR'),
+  permitirRoles('ADMINISTRADOR'),
   validarEsquema(crearLaboratorioEsquema, 'body'),
   reservasController.crearLaboratorio
 );
 
 router.post(
   '/laboratorios/:id/horarios',
-  permitirRoles('ENCARGADO', 'ADMINISTRADOR'),
+  permitirRoles('ADMINISTRADOR'),
   validarEsquema(crearHorarioEsquema, 'body'),
   reservasController.crearHorario
 );
 
 router.patch(
   '/horarios/:id/estado',
-  permitirRoles('ENCARGADO', 'ADMINISTRADOR'),
+  permitirRoles('ADMINISTRADOR'),
   validarEsquema(cambiarEstadoHorarioEsquema, 'body'),
   reservasController.cambiarEstadoHorario
 );
@@ -53,13 +53,13 @@ router.get('/:id', reservasController.obtenerPorId);
 // Endpoints administrativos de aprobación y rechazo
 router.patch(
   '/:id/aprobar',
-  permitirRoles('ENCARGADO', 'ADMINISTRADOR'),
+  permitirRoles('ADMINISTRADOR'),
   reservasController.aprobar
 );
 
 router.patch(
   '/:id/rechazar',
-  permitirRoles('ENCARGADO', 'ADMINISTRADOR'),
+  permitirRoles('ADMINISTRADOR'),
   validarEsquema(rechazarReservaEsquema, 'body'),
   reservasController.rechazar
 );
@@ -67,7 +67,7 @@ router.patch(
 // Avisar al solicitante que falta documentación obligatoria
 router.post(
   '/:id/notificar-faltante',
-  permitirRoles('ENCARGADO', 'ADMINISTRADOR'),
+  permitirRoles('ADMINISTRADOR'),
   reservasController.notificarFaltante
 );
 

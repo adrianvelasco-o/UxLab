@@ -18,8 +18,10 @@ import {
 } from '../src/modules/practicas/practicas.schema.js';
 import {
   cambiarRolEsquema,
-  cambiarEstadoEsquema
+  cambiarEstadoEsquema,
+  crearUsuarioAdminEsquema
 } from '../src/modules/usuarios/usuarios.schema.js';
+import { compararContrasena } from '../src/utils/hashContrasena.js';
 import {
   crearLaboratorioEsquema,
   crearHorarioEsquema,
@@ -258,15 +260,66 @@ describe('API Ux', () => {
   });
 
   describe('Esquemas de Validación Zod - Administración de Usuarios', () => {
-    test('cambiarRolEsquema debe aceptar roles válidos', () => {
+    test('cambiarRolEsquema debe aceptar los 3 roles oficiales y rechazar ENCARGADO u otros roles', () => {
+      expect(cambiarRolEsquema.safeParse({ rolNombre: 'ADMINISTRADOR' }).success).toBe(true);
       expect(cambiarRolEsquema.safeParse({ rolNombre: 'DOCENTE' }).success).toBe(true);
-      expect(cambiarRolEsquema.safeParse({ rolNombre: 'ENCARGADO' }).success).toBe(true);
+      expect(cambiarRolEsquema.safeParse({ rolNombre: 'ESTUDIANTE' }).success).toBe(true);
+      expect(cambiarRolEsquema.safeParse({ rolNombre: 'ENCARGADO' }).success).toBe(false);
       expect(cambiarRolEsquema.safeParse({ rolNombre: 'ROL_INEXISTENTE' }).success).toBe(false);
     });
 
     test('cambiarEstadoEsquema debe requerir booleano', () => {
       expect(cambiarEstadoEsquema.safeParse({ activo: false }).success).toBe(true);
       expect(cambiarEstadoEsquema.safeParse({ activo: 'true' }).success).toBe(false);
+    });
+
+    test('crearUsuarioAdminEsquema debe validar usuario con datos completos y rol válido', () => {
+      const usuarioValido = {
+        nombres: 'María',
+        apellidos: 'Gómez',
+        correoInstitucional: 'mgomez@unicolmayor.edu.co',
+        contrasena: 'claveSegura123',
+        rolNombre: 'DOCENTE',
+        activo: true
+      };
+      const res = crearUsuarioAdminEsquema.safeParse(usuarioValido);
+      expect(res.success).toBe(true);
+      expect(res.data.rolNombre).toBe('DOCENTE');
+      expect(res.data.activo).toBe(true);
+    });
+
+    test('crearUsuarioAdminEsquema debe rechazar contraseñas menores a 8 caracteres o correos no válidos', () => {
+      const usuarioInvalido = {
+        nombres: 'A',
+        apellidos: 'B',
+        correoInstitucional: 'invalido',
+        contrasena: '123',
+        rolNombre: 'ESTUDIANTE'
+      };
+      const res = crearUsuarioAdminEsquema.safeParse(usuarioInvalido);
+      expect(res.success).toBe(false);
+      expect(res.error.errors.some((e) => e.path.includes('contrasena'))).toBe(true);
+      expect(res.error.errors.some((e) => e.path.includes('correoInstitucional'))).toBe(true);
+    });
+
+    test('crearUsuarioAdminEsquema debe rechazar rol ENCARGADO y otros no permitidos', () => {
+      const rolEncargado = {
+        nombres: 'Juan',
+        apellidos: 'Pérez',
+        correoInstitucional: 'jperez@unicolmayor.edu.co',
+        contrasena: 'claveSegura123',
+        rolNombre: 'ENCARGADO'
+      };
+      expect(crearUsuarioAdminEsquema.safeParse(rolEncargado).success).toBe(false);
+
+      const rolInvalido = {
+        nombres: 'Juan',
+        apellidos: 'Pérez',
+        correoInstitucional: 'jperez@unicolmayor.edu.co',
+        contrasena: 'claveSegura123',
+        rolNombre: 'SUPER_USUARIO'
+      };
+      expect(crearUsuarioAdminEsquema.safeParse(rolInvalido).success).toBe(false);
     });
   });
 
@@ -556,7 +609,7 @@ describe('API Ux', () => {
       });
 
       test('debe conceder acceso (next sin error) si el rol está autorizado', () => {
-        const middleware = permitirRoles('ADMINISTRADOR', 'ENCARGADO');
+        const middleware = permitirRoles('ADMINISTRADOR', 'DOCENTE');
         const req = { usuario: { id: 2, rolNombre: 'ADMINISTRADOR' } };
         const next = jest.fn();
 
@@ -647,8 +700,271 @@ describe('API Ux', () => {
         });
       });
     });
+
+    describe('Gestión de Usuarios - Creación Administrativa (POST /api/usuarios - PB2/SB3)', () => {
+      const usuarioAdminToken = generarTokenJwt({ usuarioId: 1 });
+      const usuarioEstudianteToken = generarTokenJwt({ usuarioId: 2 });
+
+      test('POST /api/usuarios debe requerir autenticación (401 si no hay token)', async () => {
+        const res = await request(app)
+          .post('/api/usuarios')
+          .send({
+            nombres: 'Test',
+            apellidos: 'Usuario',
+            correoInstitucional: 'test@unicolmayor.edu.co',
+            contrasena: 'claveSegura123',
+            rolNombre: 'DOCENTE'
+          });
+
+        expect(res.statusCode).toBe(401);
+        expect(res.body.exito).toBe(false);
+      });
+
+      test('POST /api/usuarios debe rechazar con 403 si el rol es ESTUDIANTE', async () => {
+        jest.spyOn(prisma.usuario, 'findUnique').mockResolvedValue({
+          id: 2,
+          nombres: 'Estudiante',
+          apellidos: 'Prueba',
+          correoInstitucional: 'estudiante@unicolmayor.edu.co',
+          activo: true,
+          rolId: 3,
+          rol: { nombre: 'ESTUDIANTE' }
+        });
+
+        const res = await request(app)
+          .post('/api/usuarios')
+          .set('Authorization', `Bearer ${usuarioEstudianteToken}`)
+          .send({
+            nombres: 'Nuevo',
+            apellidos: 'Docente',
+            correoInstitucional: 'ndocente@unicolmayor.edu.co',
+            contrasena: 'claveSegura123',
+            rolNombre: 'DOCENTE'
+          });
+
+        expect(res.statusCode).toBe(403);
+        expect(res.body.exito).toBe(false);
+      });
+
+      test('POST /api/usuarios debe rechazar con 403 si el rol es DOCENTE', async () => {
+        const usuarioDocenteToken = generarTokenJwt({ usuarioId: 3 });
+        jest.spyOn(prisma.usuario, 'findUnique').mockResolvedValue({
+          id: 3,
+          nombres: 'Docente',
+          apellidos: 'Prueba',
+          correoInstitucional: 'docente@unicolmayor.edu.co',
+          activo: true,
+          rolId: 2,
+          rol: { nombre: 'DOCENTE' }
+        });
+
+        const res = await request(app)
+          .post('/api/usuarios')
+          .set('Authorization', `Bearer ${usuarioDocenteToken}`)
+          .send({
+            nombres: 'Nuevo',
+            apellidos: 'Usuario',
+            correoInstitucional: 'nusuario@unicolmayor.edu.co',
+            contrasena: 'claveSegura123',
+            rolNombre: 'ESTUDIANTE'
+          });
+
+        expect(res.statusCode).toBe(403);
+        expect(res.body.exito).toBe(false);
+      });
+
+      test('POST /api/usuarios debe rechazar rol ENCARGADO con 400 (rol inexistente en GesLab)', async () => {
+        jest.spyOn(prisma.usuario, 'findUnique').mockResolvedValue({
+          id: 1,
+          nombres: 'Admin',
+          apellidos: 'Sistema',
+          correoInstitucional: 'admin@unicolmayor.edu.co',
+          activo: true,
+          rolId: 1,
+          rol: { nombre: 'ADMINISTRADOR' }
+        });
+
+        const res = await request(app)
+          .post('/api/usuarios')
+          .set('Authorization', `Bearer ${usuarioAdminToken}`)
+          .send({
+            nombres: 'Carlos',
+            apellidos: 'Encargado',
+            correoInstitucional: 'carlosenc@unicolmayor.edu.co',
+            contrasena: 'claveSegura123',
+            rolNombre: 'ENCARGADO'
+          });
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.exito).toBe(false);
+      });
+
+      test('POST /api/usuarios debe rechazar datos inválidos con 400 (Zod)', async () => {
+        jest.spyOn(prisma.usuario, 'findUnique').mockResolvedValue({
+          id: 1,
+          nombres: 'Admin',
+          apellidos: 'Sistema',
+          correoInstitucional: 'admin@unicolmayor.edu.co',
+          activo: true,
+          rolId: 1,
+          rol: { nombre: 'ADMINISTRADOR' }
+        });
+
+        const res = await request(app)
+          .post('/api/usuarios')
+          .set('Authorization', `Bearer ${usuarioAdminToken}`)
+          .send({
+            nombres: '',
+            apellidos: '',
+            correoInstitucional: 'correo-no-valido',
+            contrasena: '123'
+          });
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.exito).toBe(false);
+      });
+
+      test('POST /api/usuarios debe rechazar rol no permitido con 400', async () => {
+        jest.spyOn(prisma.usuario, 'findUnique').mockResolvedValue({
+          id: 1,
+          nombres: 'Admin',
+          apellidos: 'Sistema',
+          correoInstitucional: 'admin@unicolmayor.edu.co',
+          activo: true,
+          rolId: 1,
+          rol: { nombre: 'ADMINISTRADOR' }
+        });
+
+        const res = await request(app)
+          .post('/api/usuarios')
+          .set('Authorization', `Bearer ${usuarioAdminToken}`)
+          .send({
+            nombres: 'Docente',
+            apellidos: 'Invalido',
+            correoInstitucional: 'docenteinv@unicolmayor.edu.co',
+            contrasena: 'claveSegura123',
+            rolNombre: 'ROL_INEXISTENTE'
+          });
+
+        expect(res.statusCode).toBe(400);
+        expect(res.body.exito).toBe(false);
+      });
+
+      test('POST /api/usuarios debe rechazar correo duplicado con 409', async () => {
+        jest.spyOn(prisma.usuario, 'findUnique').mockImplementation(({ where }) => {
+          if (where.id === 1) {
+            return Promise.resolve({
+              id: 1,
+              nombres: 'Admin',
+              apellidos: 'Sistema',
+              correoInstitucional: 'admin@unicolmayor.edu.co',
+              activo: true,
+              rolId: 1,
+              rol: { nombre: 'ADMINISTRADOR' }
+            });
+          }
+          if (where.correoInstitucional === 'duplicado@unicolmayor.edu.co') {
+            return Promise.resolve({
+              id: 99,
+              correoInstitucional: 'duplicado@unicolmayor.edu.co'
+            });
+          }
+          return Promise.resolve(null);
+        });
+
+        const res = await request(app)
+          .post('/api/usuarios')
+          .set('Authorization', `Bearer ${usuarioAdminToken}`)
+          .send({
+            nombres: 'Usuario',
+            apellidos: 'Repetido',
+            correoInstitucional: 'duplicado@unicolmayor.edu.co',
+            contrasena: 'claveSegura123',
+            rolNombre: 'DOCENTE'
+          });
+
+        expect(res.statusCode).toBe(409);
+        expect(res.body.exito).toBe(false);
+        expect(res.body.mensaje).toContain('ya se encuentra registrado');
+      });
+
+      test('POST /api/usuarios debe crear usuario exitosamente (201), hasheando la contraseña y sin exponer hash ni contrasena en respuesta', async () => {
+        let datosEnviadosAPrisma = null;
+
+        jest.spyOn(prisma.usuario, 'findUnique').mockImplementation(({ where }) => {
+          if (where.id === 1) {
+            return Promise.resolve({
+              id: 1,
+              nombres: 'Admin',
+              apellidos: 'Sistema',
+              correoInstitucional: 'admin@unicolmayor.edu.co',
+              activo: true,
+              rolId: 1,
+              rol: { nombre: 'ADMINISTRADOR' }
+            });
+          }
+          // Para verificación de correo duplicado
+          return Promise.resolve(null);
+        });
+
+        jest.spyOn(prisma.rol, 'findUnique').mockResolvedValue({
+          id: 2,
+          nombre: 'DOCENTE',
+          descripcion: 'Docente tutor'
+        });
+
+        jest.spyOn(prisma.usuario, 'create').mockImplementation(({ data }) => {
+          datosEnviadosAPrisma = data;
+          return Promise.resolve({
+            id: 25,
+            nombres: data.nombres,
+            apellidos: data.apellidos,
+            correoInstitucional: data.correoInstitucional,
+            activo: data.activo,
+            creadoEn: new Date('2026-10-24T12:00:00Z'),
+            actualizadoEn: new Date('2026-10-24T12:00:00Z'),
+            rol: {
+              id: 2,
+              nombre: 'DOCENTE',
+              descripcion: 'Docente tutor'
+            }
+          });
+        });
+
+        const contrasenaPlana = 'ContrasenaSegura2026*';
+        const res = await request(app)
+          .post('/api/usuarios')
+          .set('Authorization', `Bearer ${usuarioAdminToken}`)
+          .send({
+            nombres: 'Adriana',
+            apellidos: 'Morales',
+            correoInstitucional: 'amorales@unicolmayor.edu.co',
+            contrasena: contrasenaPlana,
+            rolNombre: 'DOCENTE',
+            activo: true
+          });
+
+        expect(res.statusCode).toBe(201);
+        expect(res.body.exito).toBe(true);
+
+        // Verificación de almacenamiento seguro mediante hash bcrypt
+        expect(datosEnviadosAPrisma).toBeDefined();
+        expect(datosEnviadosAPrisma.contrasenaHash).toBeDefined();
+        expect(datosEnviadosAPrisma.contrasenaHash).not.toBe(contrasenaPlana);
+        const hashValido = await compararContrasena(contrasenaPlana, datosEnviadosAPrisma.contrasenaHash);
+        expect(hashValido).toBe(true);
+
+        // Verificación de no exposición de credenciales
+        expect(res.body.datos).not.toHaveProperty('contrasena');
+        expect(res.body.datos).not.toHaveProperty('contrasenaHash');
+        expect(res.body.datos.id).toBe(25);
+        expect(res.body.datos.correoInstitucional).toBe('amorales@unicolmayor.edu.co');
+        expect(res.body.datos.rol.nombre).toBe('DOCENTE');
+      });
+    });
   });
 });
+
 
 
 

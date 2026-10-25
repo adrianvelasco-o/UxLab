@@ -49,7 +49,7 @@ export async function registrarDocumentoPdf({ practicaId, tipo, archivo, usuario
 
   // 3. Verificar permisos: El estudiante debe ser el dueño de la práctica (o admin)
   const puedeSubir =
-    ['ADMINISTRADOR', 'ENCARGADO'].includes(usuario.rolNombre) ||
+    usuario.rolNombre === 'ADMINISTRADOR' ||
     practica.estudianteId === usuario.id;
 
   if (!puedeSubir) {
@@ -85,7 +85,7 @@ export async function obtenerDocumentosDePractica(practicaId, usuario) {
   }
 
   const tienePermiso =
-    ['ADMINISTRADOR', 'ENCARGADO', 'DOCENTE'].includes(usuario.rolNombre) ||
+    ['ADMINISTRADOR', 'DOCENTE'].includes(usuario.rolNombre) ||
     practica.estudianteId === usuario.id;
 
   if (!tienePermiso) {
@@ -108,7 +108,7 @@ export async function obtenerArchivoParaDescarga(documentoId, usuario) {
 
   // 1. Verificar permisos y pertenencia según reglas de negocio
   const tienePermiso =
-    ['ADMINISTRADOR', 'ENCARGADO'].includes(usuario.rolNombre) ||
+    usuario.rolNombre === 'ADMINISTRADOR' ||
     usuario.id === documento.subidoPorUsuarioId ||
     (documento.practica &&
       (documento.practica.estudianteId === usuario.id ||

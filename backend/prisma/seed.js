@@ -22,10 +22,6 @@ async function principal() {
     {
       nombre: 'ESTUDIANTE',
       descripcion: 'Estudiante responsable o evaluador de prácticas de usabilidad'
-    },
-    {
-      nombre: 'ENCARGADO',
-      descripcion: 'Encargado de la gestión operativa de laboratorios, horarios y reservas'
     }
   ];
 
@@ -42,7 +38,6 @@ async function principal() {
   const rolAdmin = await prisma.rol.findUnique({ where: { nombre: 'ADMINISTRADOR' } });
   const rolDocente = await prisma.rol.findUnique({ where: { nombre: 'DOCENTE' } });
   const rolEstudiante = await prisma.rol.findUnique({ where: { nombre: 'ESTUDIANTE' } });
-  const rolEncargado = await prisma.rol.findUnique({ where: { nombre: 'ENCARGADO' } });
 
   // 2. Usuarios base. Los usuarios demo (contraseña común) NUNCA se crean en producción
   //    salvo que se active SEMBRAR_USUARIOS_DEMO=true de forma explícita.
@@ -77,30 +72,22 @@ async function principal() {
       });
     }
     usuariosBase.push(
-    {
-      rolId: rolDocente.id,
-      nombres: 'Víctor Hugo',
-      apellidos: 'Pinto Rodríguez',
-      correoInstitucional: 'vpinto@unicolmayor.edu.co',
-      contrasenaHash: contrasenaComun,
-      activo: true
-    },
-    {
-      rolId: rolEstudiante.id,
-      nombres: 'Adrián Esteban',
-      apellidos: 'Velasco Obando',
-      correoInstitucional: 'adrianvelasco@unicolmayor.edu.co',
-      contrasenaHash: contrasenaComun,
-      activo: true
-    },
-    {
-      rolId: rolEncargado.id,
-      nombres: 'Carlos Andrés',
-      apellidos: 'Martínez Muñoz',
-      correoInstitucional: 'encargado.Ux@unicolmayor.edu.co',
-      contrasenaHash: contrasenaComun,
-      activo: true
-    }
+      {
+        rolId: rolDocente.id,
+        nombres: 'Víctor Hugo',
+        apellidos: 'Pinto Rodríguez',
+        correoInstitucional: 'vpinto@unicolmayor.edu.co',
+        contrasenaHash: contrasenaComun,
+        activo: true
+      },
+      {
+        rolId: rolEstudiante.id,
+        nombres: 'Adrián Esteban',
+        apellidos: 'Velasco Obando',
+        correoInstitucional: 'adrianvelasco@unicolmayor.edu.co',
+        contrasenaHash: contrasenaComun,
+        activo: true
+      }
     );
   }
 

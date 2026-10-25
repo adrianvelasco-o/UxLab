@@ -12,8 +12,6 @@ export function Dashboard() {
         return 'Docente';
       case 'ESTUDIANTE':
         return 'Estudiante';
-      case 'ENCARGADO':
-        return 'Encargado de Laboratorio';
       default:
         return rol;
     }

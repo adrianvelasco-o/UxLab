@@ -15,7 +15,6 @@ enum NombreRol {
   ADMINISTRADOR
   DOCENTE
   ESTUDIANTE
-  ENCARGADO
 
   @@map("nombre_rol")
 }

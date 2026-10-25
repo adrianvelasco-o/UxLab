@@ -32,3 +32,13 @@ export async function cambiarEstado(req, res, next) {
     next(error);
   }
 }
+
+export async function crear(req, res, next) {
+  try {
+    const nuevoUsuario = await usuariosService.crearUsuarioPorAdmin(req.body);
+    return responderExito(res, 201, 'Usuario institucional creado exitosamente por administrador', nuevoUsuario);
+  } catch (error) {
+    next(error);
+  }
+}
+

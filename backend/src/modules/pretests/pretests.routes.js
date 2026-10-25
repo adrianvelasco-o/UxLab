@@ -9,7 +9,7 @@ const router = Router();
 
 router.use(autenticar);
 
-// Los pre-tests contienen datos personales de participantes: se excluye al rol ENCARGADO
+// Los pre-tests contienen datos personales de participantes (Roles oficiales: ESTUDIANTE, DOCENTE, ADMINISTRADOR)
 const rolesPretest = permitirRoles('ESTUDIANTE', 'DOCENTE', 'ADMINISTRADOR');
 
 router.get('/', rolesPretest, pretestsController.listar);

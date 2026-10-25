@@ -184,10 +184,10 @@ export async function contarReservasActivasEnFranja({ laboratorioId, horarioId, 
   });
 }
 
-export async function listarEncargadosActivos() {
+export async function listarAdministradoresActivos() {
   return prisma.usuario.findMany({
     where: {
-      rol: { nombre: 'ENCARGADO' },
+      rol: { nombre: 'ADMINISTRADOR' },
       activo: true
     },
     select: {

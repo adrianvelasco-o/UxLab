@@ -1,4 +1,5 @@
 import * as usuariosRepository from './usuarios.repository.js';
+import { generarHashContrasena } from '../../utils/hashContrasena.js';
 import { AppError } from '../../errors/AppError.js';
 import { CODIGOS_ERROR } from '../../constants/codigosError.js';
 
@@ -38,3 +39,44 @@ export async function cambiarEstadoUsuario(usuarioId, activo) {
 
   return usuariosRepository.actualizarEstadoUsuario(usuarioId, activo);
 }
+
+export async function crearUsuarioPorAdmin({
+  nombres,
+  apellidos,
+  correoInstitucional,
+  contrasena,
+  rolNombre,
+  activo = true
+}) {
+  const usuarioExistente = await usuariosRepository.buscarUsuarioPorCorreo(correoInstitucional);
+  if (usuarioExistente) {
+    throw new AppError(
+      'El correo institucional ya se encuentra registrado',
+      409,
+      CODIGOS_ERROR.CORREO_YA_REGISTRADO
+    );
+  }
+
+  const rol = await usuariosRepository.buscarRolPorNombre(rolNombre);
+  if (!rol) {
+    throw new AppError(
+      `El rol '${rolNombre}' no existe en el sistema`,
+      400,
+      CODIGOS_ERROR.DATOS_INVALIDOS
+    );
+  }
+
+  const contrasenaHash = await generarHashContrasena(contrasena);
+
+  const nuevoUsuario = await usuariosRepository.crearUsuario({
+    nombres,
+    apellidos,
+    correoInstitucional,
+    contrasenaHash,
+    rolId: rol.id,
+    activo
+  });
+
+  return nuevoUsuario;
+}
+

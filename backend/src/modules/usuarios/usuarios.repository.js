@@ -112,3 +112,39 @@ export async function listarDocentesActivos() {
     orderBy: [{ apellidos: 'asc' }, { nombres: 'asc' }]
   });
 }
+
+export async function buscarUsuarioPorCorreo(correoInstitucional) {
+  return prisma.usuario.findUnique({
+    where: { correoInstitucional }
+  });
+}
+
+export async function crearUsuario({ nombres, apellidos, correoInstitucional, contrasenaHash, rolId, activo = true }) {
+  return prisma.usuario.create({
+    data: {
+      nombres,
+      apellidos,
+      correoInstitucional,
+      contrasenaHash,
+      rolId,
+      activo
+    },
+    select: {
+      id: true,
+      nombres: true,
+      apellidos: true,
+      correoInstitucional: true,
+      activo: true,
+      creadoEn: true,
+      actualizadoEn: true,
+      rol: {
+        select: {
+          id: true,
+          nombre: true,
+          descripcion: true
+        }
+      }
+    }
+  });
+}
+

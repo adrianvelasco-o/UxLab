@@ -115,7 +115,7 @@ export async function enviarPracticaARevision(practicaId, usuario) {
 }
 
 export async function obtenerPracticasUsuario(usuario) {
-  if (['ADMINISTRADOR', 'ENCARGADO'].includes(usuario.rolNombre)) {
+  if (usuario.rolNombre === 'ADMINISTRADOR') {
     return practicasRepository.listarTodasLasPracticas();
   }
   if (usuario.rolNombre === 'DOCENTE') {
@@ -133,7 +133,7 @@ export async function obtenerPracticaDetalle(practicaId, usuario) {
   }
 
   const tienePermiso =
-    ['ADMINISTRADOR', 'ENCARGADO', 'DOCENTE'].includes(usuario.rolNombre) ||
+    ['ADMINISTRADOR', 'DOCENTE'].includes(usuario.rolNombre) ||
     practica.estudianteId === usuario.id;
 
   if (!tienePermiso) {
@@ -300,7 +300,7 @@ export async function finalizarPractica(practicaId, datos, usuario) {
   }
 
   // Transición a FINALIZADA
-  const esDuenio = practica.estudianteId === usuario.id || ['ADMINISTRADOR', 'DOCENTE', 'ENCARGADO'].includes(usuario.rolNombre);
+  const esDuenio = practica.estudianteId === usuario.id || ['ADMINISTRADOR', 'DOCENTE'].includes(usuario.rolNombre);
   if (!esDuenio) {
     throw new AppError('No tienes permisos para finalizar esta práctica', 403, CODIGOS_ERROR.ACCESO_DENEGADO);
   }
@@ -346,7 +346,7 @@ export async function agregarParticipante(practicaId, datos, usuario) {
     throw new AppError('La práctica especificada no existe', 404, CODIGOS_ERROR.RECURSO_NO_ENCONTRADO);
   }
 
-  const esDuenio = practica.estudianteId === usuario.id || ['ADMINISTRADOR', 'ENCARGADO'].includes(usuario.rolNombre);
+  const esDuenio = practica.estudianteId === usuario.id || usuario.rolNombre === 'ADMINISTRADOR';
   if (!esDuenio) {
     throw new AppError('No tienes permisos para agregar participantes a esta práctica', 403, CODIGOS_ERROR.ACCESO_DENEGADO);
   }
@@ -385,7 +385,7 @@ export async function eliminarParticipante(practicaId, participanteId, usuario) 
   }
 
   const practica = await practicasRepository.buscarPracticaPorId(practicaId);
-  const esDuenio = practica.estudianteId === usuario.id || ['ADMINISTRADOR', 'ENCARGADO'].includes(usuario.rolNombre);
+  const esDuenio = practica.estudianteId === usuario.id || usuario.rolNombre === 'ADMINISTRADOR';
   if (!esDuenio) {
     throw new AppError('No tienes permisos para eliminar este participante', 403, CODIGOS_ERROR.ACCESO_DENEGADO);
   }

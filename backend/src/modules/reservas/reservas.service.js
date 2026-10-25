@@ -28,7 +28,7 @@ export async function solicitarReserva({ practicaId, laboratorioId = 1, horarioI
   }
 
   // 2. Verificar que el estudiante sea el dueño de la práctica (o admin)
-  if (practica.estudianteId !== usuario.id && !['ADMINISTRADOR', 'ENCARGADO'].includes(usuario.rolNombre)) {
+  if (practica.estudianteId !== usuario.id && usuario.rolNombre !== 'ADMINISTRADOR') {
     throw new AppError('Solo puedes solicitar reservas para tus propias prácticas', 403, CODIGOS_ERROR.ACCESO_DENEGADO);
   }
 
@@ -97,19 +97,19 @@ export async function solicitarReserva({ practicaId, laboratorioId = 1, horarioI
     estado: 'PENDIENTE'
   });
 
-  // 9. Notificar al Encargado del laboratorio (Escenario 1)
-  reservasRepository.listarEncargadosActivos().then((encargados) => {
-    encargados.forEach((encargado) => {
+  // 9. Notificar al Administrador del laboratorio (Escenario 1)
+  reservasRepository.listarAdministradoresActivos().then((administradores) => {
+    administradores.forEach((admin) => {
       crearYEnviarNotificacion({
-        usuarioId: encargado.id,
+        usuarioId: admin.id,
         titulo: 'Nueva Solicitud de Reserva',
         mensaje: `El estudiante ha solicitado una reserva de laboratorio para la práctica '${practica.titulo}'.`,
         tipo: 'RESERVA_SOLICITADA',
         referenciaEntidad: 'RESERVA',
         referenciaId: nuevaReserva.id
-      }).catch((err) => console.error('Error al notificar encargado:', err.message));
+      }).catch((err) => console.error('Error al notificar administrador:', err.message));
     });
-  }).catch((err) => console.error('Error al listar encargados:', err.message));
+  }).catch((err) => console.error('Error al listar administradores:', err.message));
 
   return nuevaReserva;
 }
@@ -118,8 +118,8 @@ export async function solicitarReserva({ practicaId, laboratorioId = 1, horarioI
 export const solicitarNuevaReserva = solicitarReserva;
 
 export async function obtenerReservasUsuario(usuario) {
-  // Administradores y encargados pueden consultar todas las solicitudes
-  const reservas = ['ADMINISTRADOR', 'ENCARGADO'].includes(usuario.rolNombre)
+  // Administradores pueden consultar todas las solicitudes
+  const reservas = usuario.rolNombre === 'ADMINISTRADOR'
     ? await reservasRepository.listarTodasLasReservas()
     : await reservasRepository.listarReservasPorUsuario(usuario.id);
 
@@ -133,7 +133,7 @@ export async function obtenerDetalleReserva(reservaId, usuario) {
   }
 
   const tienePermiso =
-    ['ADMINISTRADOR', 'ENCARGADO'].includes(usuario.rolNombre) ||
+    usuario.rolNombre === 'ADMINISTRADOR' ||
     reserva.solicitanteId === usuario.id;
 
   if (!tienePermiso) {
