@@ -35,11 +35,16 @@ export function eliminarToken() {
 export async function clienteApi(ruta, opciones = {}) {
   const url = `${CONFIG.API_URL}${ruta.startsWith('/') ? ruta : `/${ruta}`}`;
 
+  const esFormData = typeof FormData !== 'undefined' && opciones.body instanceof FormData;
+
   const headers = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    Accept: opciones.tipoRespuesta === 'blob' ? '*/*' : 'application/json',
     ...(opciones.headers || {})
   };
+
+  if (!esFormData && !headers['Content-Type'] && opciones.tipoRespuesta !== 'blob') {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const token = obtenerToken();
   if (token && !headers.Authorization) {
@@ -53,9 +58,9 @@ export async function clienteApi(ruta, opciones = {}) {
 
   try {
     const respuesta = await fetch(url, configuracion);
-    const datos = await respuesta.json().catch(() => null);
 
     if (!respuesta.ok) {
+      const datos = await respuesta.json().catch(() => null);
       const mensajeError =
         datos?.mensaje ||
         datos?.error ||
@@ -66,6 +71,11 @@ export async function clienteApi(ruta, opciones = {}) {
       throw error;
     }
 
+    if (opciones.tipoRespuesta === 'blob') {
+      return await respuesta.blob();
+    }
+
+    const datos = await respuesta.json().catch(() => null);
     return datos;
   } catch (error) {
     // Si la sesión expiró o el token es inválido (401), limpiar token

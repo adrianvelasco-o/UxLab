@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { NavigationProvider, useNavigation, RUTAS } from './context/NavigationContext.jsx';
 import { Login } from './pages/Login.jsx';
@@ -7,7 +7,10 @@ import { RutaProtegida } from './components/RutaProtegida.jsx';
 import { PanelAdmin } from './pages/PanelAdmin.jsx';
 import { UsuariosAdmin } from './pages/UsuariosAdmin.jsx';
 import { PanelDocente } from './pages/PanelDocente.jsx';
+import { DetallePracticaDocente } from './pages/DetallePracticaDocente.jsx';
 import { PanelEstudiante } from './pages/PanelEstudiante.jsx';
+import { PracticasEstudiante } from './pages/PracticasEstudiante.jsx';
+import { DetallePractica } from './pages/DetallePractica.jsx';
 import './App.css';
 
 function EnrutadorPrincipal() {
@@ -32,7 +35,16 @@ function EnrutadorPrincipal() {
     );
   }
 
-  // 3. Ruta: Panel de Docente (/docente)
+  // 3. Ruta: Detalle y RevisiÃ³n de PrÃ¡ctica del Docente (/docente/practica?id=...)
+  if (ruta.startsWith('/docente/practica')) {
+    return (
+      <RutaProtegida rolesPermitidos={['DOCENTE', 'ADMINISTRADOR']}>
+        <DetallePracticaDocente />
+      </RutaProtegida>
+    );
+  }
+
+  // 3b. Ruta: Panel y Bandeja de Docente (/docente)
   if (ruta === RUTAS.DOCENTE) {
     return (
       <RutaProtegida rolesPermitidos={['DOCENTE']}>
@@ -41,7 +53,25 @@ function EnrutadorPrincipal() {
     );
   }
 
-  // 4. Ruta: Panel de Estudiante (/estudiante)
+  // 4. Ruta: Detalle y Gestión de Práctica del Estudiante (/estudiante/practica?id=...)
+  if (ruta.startsWith('/estudiante/practica')) {
+    return (
+      <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
+        <DetallePractica />
+      </RutaProtegida>
+    );
+  }
+
+  // 5. Ruta: Gestión de Prácticas del Estudiante (/estudiante/practicas)
+  if (ruta === RUTAS.ESTUDIANTE_PRACTICAS) {
+    return (
+      <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
+        <PracticasEstudiante />
+      </RutaProtegida>
+    );
+  }
+
+  // 6. Ruta: Panel de Estudiante (/estudiante)
   if (ruta === RUTAS.ESTUDIANTE) {
     return (
       <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
@@ -49,6 +79,8 @@ function EnrutadorPrincipal() {
       </RutaProtegida>
     );
   }
+
+
 
   // 5. Ruta raíz (/) o ruta predeterminada según el rol del usuario autenticado
   switch (usuario?.rol) {

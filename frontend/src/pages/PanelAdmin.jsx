@@ -24,7 +24,7 @@ export function PanelAdmin() {
             <div className="module-icon-wrap" aria-hidden="true">👥</div>
             <div className="module-info">
               <h3>Gestión de Usuarios y Roles</h3>
-              <p>Alta de usuarios institucionales, cambio de roles (Docente, Estudiante, Encargado) y control de estado activo/inactivo.</p>
+              <p>Alta de usuarios institucionales, cambio de roles oficiales (Administrador, Docente, Estudiante) y control de estado activo/inactivo.</p>
               <button
                 type="button"
                 onClick={() => navegar(RUTAS.ADMIN_USUARIOS, 'Gestión de Usuarios')}

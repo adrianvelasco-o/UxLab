@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const NavigationContext = createContext(null);
 
@@ -7,8 +7,13 @@ export const RUTAS = {
   ADMIN: '/admin',
   ADMIN_USUARIOS: '/admin/usuarios',
   DOCENTE: '/docente',
-  ESTUDIANTE: '/estudiante'
+  DOCENTE_PRACTICA_DETALLE: '/docente/practica',
+  ESTUDIANTE: '/estudiante',
+  ESTUDIANTE_PRACTICAS: '/estudiante/practicas',
+  ESTUDIANTE_PRACTICA_DETALLE: '/estudiante/practica'
 };
+
+
 
 export const ROLES_VALIDOS = ['ADMINISTRADOR', 'DOCENTE', 'ESTUDIANTE'];
 

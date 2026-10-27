@@ -1014,4 +1014,934 @@ body {
   cursor: not-allowed;
 }
 
+/* ==========================================================================
+   ESTILOS GESTIÓN DE PRÁCTICAS DEL ESTUDIANTE (PB3 / SB4)
+   ========================================================================== */
 
+.modal-lg {
+  max-width: 680px;
+  width: 95%;
+}
+
+.modal-subtitulo {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.formulario-modal textarea {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-sizing: border-box;
+  background: var(--white);
+  resize: vertical;
+}
+
+.formulario-modal textarea:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(27, 79, 114, 0.15);
+}
+
+.texto-opcional {
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: #64748b;
+  margin-left: 0.25rem;
+}
+
+/* Badges para los 5 estados oficiales de práctica */
+.badge-borrador {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-revision {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.badge-rechazada {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.badge-aprobada {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-cerrada {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.badge-sin-tutor {
+  display: inline-block;
+  font-size: 0.775rem;
+  color: #64748b;
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+}
+
+/* Celdas de tabla para prácticas */
+.descripcion-practica-celda {
+  max-width: 320px;
+}
+
+.texto-descripcion-resumen {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #334155;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+}
+
+.texto-objetivo-resumen {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.775rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.docente-asignado-celda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.docente-nombre {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1e293b;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+/* ==========================================================================
+   ESTILOS DE DETALLE DE PRÁCTICA, INSTRUMENTOS Y DOCUMENTOS (PB3 / SB4)
+   ========================================================================== */
+
+.btn-volver-dashboard {
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  color: var(--primary-blue);
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s ease;
+}
+
+.btn-volver-dashboard:hover {
+  background-color: #f1f5f9;
+  border-color: var(--primary-blue);
+}
+
+.btn-volver-dashboard:focus-visible {
+  outline: 3px solid #ffbf47;
+  outline-offset: 2px;
+}
+
+.subtitulo-detalle-practica {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.35rem;
+}
+
+.detalle-metodologico-card {
+  background: var(--white);
+  border: 1px solid #e1e7ec;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.seccion-titulo-detalle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  margin: 0 0 0.85rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.resumen-metodologico-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .resumen-metodologico-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.etiqueta-dato {
+  display: block;
+  font-size: 0.775rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.valor-dato {
+  font-size: 0.9rem;
+  color: #1e293b;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* Indicador de prerrequisitos de revisión (RN02) */
+.prerrequisitos-status-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary-blue);
+  border-radius: 8px;
+  padding: 1.15rem 1.25rem;
+  margin-top: 1rem;
+}
+
+.prerrequisitos-status-box h3 {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.9rem;
+  color: var(--primary-blue);
+  font-weight: 700;
+}
+
+.lista-prerrequisitos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.lista-prerrequisitos li {
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lista-prerrequisitos li.cumplido {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.lista-prerrequisitos li.pendiente {
+  color: #64748b;
+}
+
+/* Bloques de sección */
+.seccion-detalle-bloque {
+  background: var(--white);
+  border: 1px solid #e1e7ec;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.seccion-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.seccion-subtitulo {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+  line-height: 1.4;
+}
+
+/* Formularios de instrumentos y documentos */
+.formulario-instrumento-card,
+.formulario-subida-pdf-card {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.formulario-instrumento-card h3,
+.formulario-subida-pdf-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+}
+
+.formulario-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .formulario-grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.campo-grupo label {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.campo-grupo input,
+.campo-grupo select,
+.campo-grupo textarea {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--text-dark);
+  box-sizing: border-box;
+}
+
+.campo-grupo input:focus,
+.campo-grupo select:focus,
+.campo-grupo textarea:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(27, 79, 114, 0.15);
+}
+
+.campo-obligatorio {
+  color: #b91c1c;
+  font-weight: bold;
+}
+
+.texto-ayuda {
+  font-size: 0.775rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.archivo-seleccionado-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.5rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* Listas vacías */
+.lista-vacia-card {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+}
+
+.lista-vacia-card .icono-vacio {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+/* Grilla de instrumentos */
+.lista-instrumentos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.15rem;
+}
+
+.instrumento-card-item {
+  background: var(--white);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.instrumento-card-item:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+}
+
+.instrumento-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge-tipo-instrumento {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 12px;
+}
+
+.btn-eliminar-item {
+  background: none;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 0.775rem;
+  font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-eliminar-item:hover {
+  background: #fee2e2;
+}
+
+.btn-eliminar-item:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 1px;
+}
+
+.instrumento-card-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.instrumento-card-instrucciones,
+.instrumento-card-contenido {
+  font-size: 0.825rem;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0;
+  background: #f8fafc;
+  padding: 0.5rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid #edf2f7;
+}
+
+.nombre-completo-celda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.correo-institucional-celda {
+  font-size: 0.775rem;
+  color: #64748b;
+  display: block;
+}
+
+
+
+
+/* ========================================================================= */
+/* PB4-A: ESTILOS PARA SOLICITUD DE REVISION Y GESTION DE OBSERVACIONES      */
+/* ========================================================================= */
+
+.accion-solicitar-revision-box {
+  background: var(--white);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.accion-solicitar-revision-box.listo {
+  border-left: 4px solid var(--accent-green, #16a34a);
+  background: #f0fdf4;
+}
+
+.accion-solicitar-revision-box.bloqueado {
+  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+}
+
+.accion-revision-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.accion-revision-texto h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.accion-revision-texto p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.btn-solicitar-revision {
+  background: #15803d;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(21, 128, 61, 0.2);
+}
+
+.btn-solicitar-revision:hover:not(:disabled) {
+  background: #166534;
+  box-shadow: 0 4px 6px rgba(21, 128, 61, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-solicitar-revision:focus-visible {
+  outline: 3px solid #15803d;
+  outline-offset: 2px;
+}
+
+.btn-solicitar-revision:disabled {
+  background: #94a3b8;
+  color: #f1f5f9;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Tarjetas de Historial de Revision */
+.revisiones-historial-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.revision-card {
+  background: var(--white);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.revision-card.aprobada {
+  border-left: 5px solid #16a34a;
+}
+
+.revision-card.rechazada {
+  border-left: 5px solid #dc2626;
+}
+
+.revision-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #edf2f7;
+  margin-bottom: 0.85rem;
+}
+
+.revision-dictamen-grupo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.revision-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.825rem;
+  color: #64748b;
+}
+
+.revision-comentarios-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.revision-comentarios-box h4 {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.875rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.revision-comentarios-texto {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #1e293b;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Observaciones dentro de la revision */
+.observaciones-seccion-contenedor {
+  margin-top: 1rem;
+}
+
+.observaciones-seccion-contenedor h4 {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.observaciones-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.observacion-item-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.15s ease;
+}
+
+.observacion-item-card.resuelta {
+  border-left: 4px solid #16a34a;
+  background: #f0fdf4;
+}
+
+.observacion-item-card.pendiente {
+  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+}
+
+.observacion-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.badge-seccion-obs {
+  background: #e2e8f0;
+  color: #1e293b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+
+.badge-obs-resuelta {
+  background: #dcfce7;
+  color: #14532d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid #86efac;
+}
+
+.badge-obs-pendiente {
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid #fde68a;
+}
+
+.observacion-detalle-texto {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.observacion-accion-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.35rem;
+}
+
+.btn-resolver-obs {
+  background: #15803d;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  min-height: 44px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background 0.15s ease;
+}
+
+.btn-resolver-obs:hover:not(:disabled) {
+  background: #166534;
+}
+
+.btn-resolver-obs:focus-visible {
+  outline: 2px solid #15803d;
+  outline-offset: 2px;
+}
+
+.btn-reabrir-obs {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  min-height: 44px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.15s ease;
+}
+
+.btn-reabrir-obs:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-reabrir-obs:focus-visible {
+  outline: 2px solid #475569;
+  outline-offset: 2px;
+}
+
+/* Modal de Confirmacion de Envio */
+.modal-confirmacion-texto {
+  font-size: 0.925rem;
+  color: #334155;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+
+.modal-resumen-envio {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.modal-resumen-envio ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.35rem 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+/* Adaptabilidad Responsive (320px - 768px) */
+@media (max-width: 640px) {
+  .accion-revision-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-solicitar-revision {
+    width: 100%;
+  }
+
+  .revision-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .observacion-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .observacion-accion-footer {
+    justify-content: stretch;
+  }
+
+  .btn-resolver-obs,
+  .btn-reabrir-obs {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ========================================================================= */
+/* BANDEJA DOCENTE DE PRÃCTICAS Y REVISIÃ“N (PB4-B-01)                       */
+/* ========================================================================= */
+.tarjeta-filtro-activa {
+  border-color: #0d9488 !important;
+  background-color: #f0fdfa !important;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+}
+
+.bandeja-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.filtros-estado-docente {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-filtro-docente {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #334155;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-filtro-docente:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.btn-filtro-docente.activo {
+  background-color: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+  font-weight: 600;
+}
+
+.btn-filtro-docente:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+.card-en-revision-destacada {
+  border-left: 4px solid #0d9488 !important;
+  background-color: #fcfefe;
+}
+
+.practica-estudiante-texto {
+  font-size: 0.875rem;
+  color: #475569;
+  margin: 0.4rem 0 0.6rem 0;
+}
+
+.estudiante-correo-span {
+  color: #64748b;
+  font-size: 0.825rem;
+}
+
+@media (max-width: 640px) {
+  .bandeja-header-flex {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filtros-estado-docente {
+    width: 100%;
+  }
+
+  .btn-filtro-docente {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+}

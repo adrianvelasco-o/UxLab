@@ -94,15 +94,26 @@ export function Navbar() {
           )}
 
           {usuario?.rol === 'ESTUDIANTE' && (
-            <button
-              type="button"
-              onClick={() => navegar(RUTAS.ESTUDIANTE, 'Panel Estudiante')}
-              className={`nav-link-btn ${ruta === RUTAS.ESTUDIANTE || ruta === RUTAS.INICIO ? 'activo' : ''}`}
-              aria-current={ruta === RUTAS.ESTUDIANTE || ruta === RUTAS.INICIO ? 'page' : undefined}
-            >
-              Panel Estudiante
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => navegar(RUTAS.ESTUDIANTE, 'Panel Estudiante')}
+                className={`nav-link-btn ${ruta === RUTAS.ESTUDIANTE || (ruta === RUTAS.INICIO && ruta !== RUTAS.ESTUDIANTE_PRACTICAS) ? 'activo' : ''}`}
+                aria-current={ruta === RUTAS.ESTUDIANTE ? 'page' : undefined}
+              >
+                Panel Estudiante
+              </button>
+              <button
+                type="button"
+                onClick={() => navegar(RUTAS.ESTUDIANTE_PRACTICAS, 'Mis Prácticas')}
+                className={`nav-link-btn ${ruta === RUTAS.ESTUDIANTE_PRACTICAS ? 'activo' : ''}`}
+                aria-current={ruta === RUTAS.ESTUDIANTE_PRACTICAS ? 'page' : undefined}
+              >
+                Mis Prácticas
+              </button>
+            </>
           )}
+
         </nav>
       </div>
 

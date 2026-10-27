@@ -962,9 +962,1022 @@ describe('API Ux', () => {
         expect(res.body.datos.rol.nombre).toBe('DOCENTE');
       });
     });
+
+    describe('Formulación de Prácticas, Instrumentos y Carga de Documentos PDF (PB3 / SB4)', () => {
+      const estudianteId = 20;
+      const estudianteToken = generarTokenJwt({ usuarioId: estudianteId });
+      const otroEstudianteId = 21;
+      const otroEstudianteToken = generarTokenJwt({ usuarioId: otroEstudianteId });
+      const docenteId = 30;
+      const docenteToken = generarTokenJwt({ usuarioId: docenteId });
+
+      beforeEach(() => {
+        jest.spyOn(prisma.usuario, 'findUnique').mockImplementation(({ where }) => {
+          if (where.id === estudianteId) {
+            return Promise.resolve({
+              id: estudianteId,
+              nombres: 'Carlos',
+              apellidos: 'Estudiante',
+              correoInstitucional: 'cestudiante@unicolmayor.edu.co',
+              activo: true,
+              rolId: 3,
+              rol: { nombre: 'ESTUDIANTE' }
+            });
+          }
+          if (where.id === otroEstudianteId) {
+            return Promise.resolve({
+              id: otroEstudianteId,
+              nombres: 'Ana',
+              apellidos: 'OtraEstudiante',
+              correoInstitucional: 'aestudiante@unicolmayor.edu.co',
+              activo: true,
+              rolId: 3,
+              rol: { nombre: 'ESTUDIANTE' }
+            });
+          }
+          if (where.id === docenteId) {
+            return Promise.resolve({
+              id: docenteId,
+              nombres: 'Profesor',
+              apellidos: 'Tutor',
+              correoInstitucional: 'ptutor@unicolmayor.edu.co',
+              activo: true,
+              rolId: 2,
+              rol: { nombre: 'DOCENTE' }
+            });
+          }
+          return Promise.resolve(null);
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // PRÁCTICAS: POST /api/practicas
+      // -----------------------------------------------------------------
+      describe('Creación de Prácticas (POST /api/practicas)', () => {
+        test('POST /api/practicas debe requerir autenticación (401 sin token)', async () => {
+          const res = await request(app)
+            .post('/api/practicas')
+            .send({
+              titulo: 'Práctica de usabilidad',
+              descripcion: 'Descripción general',
+              objetivo: 'Medir la tasa de error'
+            });
+
+          expect(res.statusCode).toBe(401);
+          expect(res.body.exito).toBe(false);
+        });
+
+        test('POST /api/practicas debe permitir al estudiante crear práctica en estado BORRADOR asignándose como propietario', async () => {
+          jest.spyOn(prisma.practica, 'create').mockImplementation(({ data }) => {
+            return Promise.resolve({
+              id: 10,
+              titulo: data.titulo,
+              descripcion: data.descripcion,
+              objetivo: data.objetivo,
+              estudianteId: data.estudianteId,
+              docenteId: data.docenteId,
+              estado: data.estado,
+              creadoEn: new Date(),
+              estudiante: {
+                id: data.estudianteId,
+                nombres: 'Carlos',
+                apellidos: 'Estudiante',
+                correoInstitucional: 'cestudiante@unicolmayor.edu.co'
+              }
+            });
+          });
+
+          const res = await request(app)
+            .post('/api/practicas')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              titulo: 'Prueba de Usabilidad Portal Web',
+              descripcion: 'Evaluación heurística y pruebas con usuarios finales',
+              objetivo: 'Identificar fricciones en el flujo de matrícula'
+            });
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.id).toBe(10);
+          expect(res.body.datos.estado).toBe('BORRADOR');
+          expect(res.body.datos.estudianteId).toBe(estudianteId);
+        });
+
+        test('POST /api/practicas debe permitir asignar docente tutor si este existe, está activo y tiene rol DOCENTE', async () => {
+          jest.spyOn(prisma.usuario, 'findFirst').mockResolvedValue({
+            id: docenteId
+          });
+
+          jest.spyOn(prisma.practica, 'create').mockImplementation(({ data }) => {
+            return Promise.resolve({
+              id: 11,
+              titulo: data.titulo,
+              descripcion: data.descripcion,
+              objetivo: data.objetivo,
+              estudianteId: data.estudianteId,
+              docenteId: data.docenteId,
+              estado: 'BORRADOR',
+              estudiante: {
+                id: data.estudianteId,
+                nombres: 'Carlos',
+                apellidos: 'Estudiante',
+                correoInstitucional: 'cestudiante@unicolmayor.edu.co'
+              }
+            });
+          });
+
+          const res = await request(app)
+            .post('/api/practicas')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              titulo: 'Prueba con Tutor Asignado',
+              descripcion: 'Descripción metodológica de la prueba',
+              objetivo: 'Evaluar tiempos de respuesta del sistema',
+              docenteId: docenteId
+            });
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.datos.docenteId).toBe(docenteId);
+        });
+
+        test('POST /api/practicas debe rechazar con 400 si el docenteId asignado no existe o no tiene rol DOCENTE', async () => {
+          jest.spyOn(prisma.usuario, 'findFirst').mockResolvedValue(null);
+
+          const res = await request(app)
+            .post('/api/practicas')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              titulo: 'Prueba con Docente Inválido',
+              descripcion: 'Descripción metodológica',
+              objetivo: 'Evaluar usabilidad',
+              docenteId: 9999
+            });
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('docente tutor indicado no existe');
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // INSTRUMENTOS: POST /api/practicas/:id/instrumentos
+      // -----------------------------------------------------------------
+      describe('Registro de Instrumentos de Evaluación (POST /api/practicas/:id/instrumentos)', () => {
+        test('POST /api/practicas/:id/instrumentos debe permitir al estudiante propietario registrar un instrumento estructurado', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'BORRADOR'
+          });
+
+          jest.spyOn(prisma.instrumento, 'create').mockImplementation(({ data }) => {
+            return Promise.resolve({
+              id: 1,
+              practicaId: data.practicaId,
+              tipo: data.tipo,
+              nombre: data.nombre,
+              instrucciones: data.instrucciones,
+              contenido: data.contenido
+            });
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              tipo: 'GUIA_OBSERVACION',
+              nombre: 'Guía de Observación - Flujo de Compra',
+              instrucciones: 'Anotar comportamientos del usuario al pagar',
+              contenido: { metricas: ['tiempo_total', 'errores'] }
+            });
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.practicaId).toBe(101);
+          expect(res.body.datos.tipo).toBe('GUIA_OBSERVACION');
+        });
+
+        test('POST /api/practicas/:id/instrumentos debe rechazar con 403 si un estudiante no es propietario de la práctica', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'BORRADOR'
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${otroEstudianteToken}`)
+            .send({
+              tipo: 'BANCO_TAREAS',
+              nombre: 'Banco de tareas no autorizado'
+            });
+
+          expect(res.statusCode).toBe(403);
+          expect(res.body.exito).toBe(false);
+        });
+
+        test('POST /api/practicas/:id/instrumentos debe rechazar con 400 si la práctica se encuentra CERRADA (RN06)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'CERRADA'
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              tipo: 'CUESTIONARIO_PRE_TEST',
+              nombre: 'Cuestionario de entrada'
+            });
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('CERRADA');
+        });
+
+        test('POST /api/practicas/:id/instrumentos debe rechazar con 400 si el tipo de instrumento es inválido', async () => {
+          const res = await request(app)
+            .post('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              tipo: 'TIPO_INVENTADO_NO_VALIDO',
+              nombre: 'Instrumento inválido'
+            });
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // DOCUMENTOS PDF: POST /api/documentos
+      // -----------------------------------------------------------------
+      describe('Carga de Documentos PDF (POST /api/documentos)', () => {
+        test('POST /api/documentos debe permitir al estudiante propietario cargar un archivo PDF válido con magic bytes (%PDF-)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'BORRADOR'
+          });
+
+          let documentoCreado = null;
+          jest.spyOn(prisma.documento, 'create').mockImplementation(({ data }) => {
+            documentoCreado = data;
+            return Promise.resolve({
+              id: 88,
+              ...data,
+              creadoEn: new Date()
+            });
+          });
+
+          // Buffer simulando archivo PDF real con magic bytes %PDF-
+          const bufferPdfValido = Buffer.from('%PDF-1.4\n%Contenido simulado de prueba\n%%EOF');
+
+          const res = await request(app)
+            .post('/api/documentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .field('practicaId', '101')
+            .field('tipo', 'CONSENTIMIENTO_INFORMADO')
+            .attach('archivo', bufferPdfValido, 'consentimiento-firmado.pdf');
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.id).toBe(88);
+          expect(res.body.datos.tipo).toBe('CONSENTIMIENTO_INFORMADO');
+          expect(res.body.datos.practicaId).toBe(101);
+
+          // Limpiar archivo que Multer escribió en disco durante el test
+          if (documentoCreado?.ruta) {
+            eliminarArchivoDisco(documentoCreado.ruta);
+          }
+        });
+
+        test('POST /api/documentos debe rechazar con 400 si el archivo adjunto no es PDF', async () => {
+          const bufferTexto = Buffer.from('Texto simple sin formato');
+
+          const res = await request(app)
+            .post('/api/documentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .field('practicaId', '101')
+            .attach('archivo', bufferTexto, 'notas.txt');
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('formato PDF');
+        });
+
+        test('POST /api/documentos debe rechazar con 400 si el archivo tiene extensión .pdf pero magic bytes inválidos', async () => {
+          // Archivo que engaña por extensión pero no inicia con %PDF-
+          const bufferPdfFalsificado = Buffer.from('CONTENIDO_MALICIOSO_NO_PDF_REAL');
+
+          const res = await request(app)
+            .post('/api/documentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .field('practicaId', '101')
+            .attach('archivo', bufferPdfFalsificado, 'archivo-falso.pdf');
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no es un PDF válido');
+        });
+
+        test('POST /api/documentos debe rechazar con 403 si el estudiante no es el propietario de la práctica', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: 999, // Dueño ajeno
+            estado: 'BORRADOR'
+          });
+
+          const bufferPdfValido = Buffer.from('%PDF-1.4\nContenido de prueba\n%%EOF');
+
+          const res = await request(app)
+            .post('/api/documentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .field('practicaId', '101')
+            .attach('archivo', bufferPdfValido, 'consentimiento.pdf');
+
+          expect(res.statusCode).toBe(403);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('No tienes permisos');
+        });
+
+        test('POST /api/documentos debe rechazar con 400 si la práctica se encuentra CERRADA (RN06)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'CERRADA'
+          });
+
+          const bufferPdfValido = Buffer.from('%PDF-1.4\nContenido de prueba\n%%EOF');
+
+          const res = await request(app)
+            .post('/api/documentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .field('practicaId', '101')
+            .attach('archivo', bufferPdfValido, 'consentimiento.pdf');
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('cerrada');
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // ENVÍO A REVISIÓN: PATCH /api/practicas/:id/enviar-revision (RN02)
+      // -----------------------------------------------------------------
+      describe('Envío a Revisión Docente (PATCH /api/practicas/:id/enviar-revision - RN02)', () => {
+        test('PATCH /api/practicas/:id/enviar-revision debe rechazar con 400 si no tiene docente tutor asignado', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            docenteId: null, // Sin docente
+            estado: 'BORRADOR',
+            instrumentos: [{ id: 1 }],
+            documentos: [{ id: 1, tipo: 'CONSENTIMIENTO_INFORMADO' }]
+          });
+
+          const res = await request(app)
+            .patch('/api/practicas/101/enviar-revision')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('docente tutor');
+        });
+
+        test('PATCH /api/practicas/:id/enviar-revision debe rechazar con 400 si faltan instrumentos o consentimiento informado', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            docenteId: docenteId,
+            estado: 'BORRADOR',
+            instrumentos: [], // Sin instrumentos
+            documentos: [] // Sin documentos
+          });
+
+          const res = await request(app)
+            .patch('/api/practicas/101/enviar-revision')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('al menos un instrumento de evaluación y un documento de consentimiento informado');
+        });
+
+        test('PATCH /api/practicas/:id/enviar-revision debe transicionar exitosamente a EN_REVISION si cumple todos los prerrequisitos', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            docenteId: docenteId,
+            estado: 'BORRADOR',
+            instrumentos: [{ id: 1, tipo: 'GUIA_OBSERVACION' }],
+            documentos: [{ id: 1, tipo: 'CONSENTIMIENTO_INFORMADO' }],
+            revisiones: []
+          });
+
+          jest.spyOn(prisma.practica, 'update').mockResolvedValue({
+            id: 101,
+            titulo: 'Práctica Completa',
+            estado: 'EN_REVISION',
+            estudianteId: estudianteId,
+            docenteId: docenteId
+          });
+
+          jest.spyOn(prisma.notificacion, 'create').mockResolvedValue({
+            id: 1,
+            usuarioId: docenteId,
+            titulo: 'Nueva práctica para revisión',
+            mensaje: 'El estudiante ha enviado una práctica para tu revisión.',
+            tipo: 'PRACTICA_ENVIADA_REVISION',
+            referenciaEntidad: 'PRACTICA',
+            referenciaId: 101,
+            creadoEn: new Date()
+          });
+
+          jest.spyOn(prisma.dispositivoUsuario, 'findMany').mockResolvedValue([]);
+
+          const res = await request(app)
+            .patch('/api/practicas/101/enviar-revision')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.estado).toBe('EN_REVISION');
+
+          // Pequeña espera para que la promesa asíncrona de notificación culmine limpiamente
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // HISTORIAL DE REVISIONES: GET /api/practicas/:id/revisiones (CU10/HU07)
+      // -----------------------------------------------------------------
+      describe('Historial de Revisiones Docentes (GET /api/practicas/:id/revisiones - CU10/HU07)', () => {
+        test('GET /api/practicas/:id/revisiones debe retornar 404 si la prÃ¡ctica no existe', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue(null);
+
+          const res = await request(app)
+            .get('/api/practicas/999/revisiones')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(404);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no existe');
+        });
+
+        test('GET /api/practicas/:id/revisiones debe retornar 403 si el usuario no es propietario, docente ni admin', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            docenteId: docenteId
+          });
+
+          const res = await request(app)
+            .get('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${otroEstudianteToken}`);
+
+          expect(res.statusCode).toBe(403);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('No tienes permisos');
+        });
+
+        test('GET /api/practicas/:id/revisiones debe retornar 200 con lista vacÃ­a si la prÃ¡ctica no tiene revisiones', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            docenteId: docenteId
+          });
+
+          jest.spyOn(prisma.revision, 'findMany').mockResolvedValue([]);
+
+          const res = await request(app)
+            .get('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(Array.isArray(res.body.datos)).toBe(true);
+          expect(res.body.datos.length).toBe(0);
+        });
+
+        test('GET /api/practicas/:id/revisiones debe retornar 200 con historial de revisiones para usuario autorizado', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            docenteId: docenteId
+          });
+
+          const revisionesSimuladas = [
+            {
+              id: 1,
+              practicaId: 101,
+              docenteId: docenteId,
+              resultado: 'RECHAZADA',
+              comentariosGenerales: 'Ajustar la guÃ­a de observaciÃ³n y banco de tareas',
+              creadoEn: new Date('2026-10-25T10:00:00Z'),
+              docente: { id: docenteId, nombres: 'Carlos', apellidos: 'Docente' },
+              observaciones: [
+                { id: 10, revisionId: 1, seccion: 'INSTRUMENTOS', detalle: 'La escala SUS debe tener 10 Ã­tems', resuelta: false }
+              ]
+            }
+          ];
+
+          jest.spyOn(prisma.revision, 'findMany').mockResolvedValue(revisionesSimuladas);
+
+          const res = await request(app)
+            .get('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.length).toBe(1);
+          expect(res.body.datos[0].resultado).toBe('RECHAZADA');
+          expect(res.body.datos[0].observaciones.length).toBe(1);
+          expect(res.body.datos[0].observaciones[0].resuelta).toBe(false);
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // RESOLUCIÃ“N DE OBSERVACIONES: PATCH /api/practicas/:id/observaciones/:observacionId/resolver (CU11/HU12/RN04)
+      // -----------------------------------------------------------------
+      describe('ResoluciÃ³n de Observaciones Docentes (PATCH /api/practicas/:id/observaciones/:observacionId/resolver - CU11/HU12/RN04)', () => {
+        test('PATCH /api/practicas/:id/observaciones/:observacionId/resolver debe retornar 404 si la prÃ¡ctica no existe', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue(null);
+
+          const res = await request(app)
+            .patch('/api/practicas/999/observaciones/10/resolver')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({ resuelta: true });
+
+          expect(res.statusCode).toBe(404);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no existe');
+        });
+
+        test('PATCH /api/practicas/:id/observaciones/:observacionId/resolver debe retornar 403 si el usuario no es el dueÃ±o ni admin', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'RECHAZADA'
+          });
+
+          const res = await request(app)
+            .patch('/api/practicas/101/observaciones/10/resolver')
+            .set('Authorization', `Bearer ${otroEstudianteToken}`)
+            .send({ resuelta: true });
+
+          expect(res.statusCode).toBe(403);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('No tienes permisos');
+        });
+
+        test('PATCH /api/practicas/:id/observaciones/:observacionId/resolver debe retornar 404 si la observaciÃ³n no existe', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'RECHAZADA'
+          });
+
+          jest.spyOn(prisma.observacion, 'findUnique').mockResolvedValue(null);
+
+          const res = await request(app)
+            .patch('/api/practicas/101/observaciones/999/resolver')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({ resuelta: true });
+
+          expect(res.statusCode).toBe(404);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no existe');
+        });
+
+        test('PATCH /api/practicas/:id/observaciones/:observacionId/resolver debe retornar 404 si la observaciÃ³n pertenece a otra prÃ¡ctica', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'RECHAZADA'
+          });
+
+          jest.spyOn(prisma.observacion, 'findUnique').mockResolvedValue({
+            id: 10,
+            seccion: 'INSTRUMENTOS',
+            detalle: 'Detalle de otra prÃ¡ctica',
+            resuelta: false,
+            revision: { id: 5, practicaId: 202 }
+          });
+
+          const res = await request(app)
+            .patch('/api/practicas/101/observaciones/10/resolver')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({ resuelta: true });
+
+          expect(res.statusCode).toBe(404);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no existe');
+        });
+
+        test('PATCH /api/practicas/:id/observaciones/:observacionId/resolver debe retornar 400 si el body tiene formato invÃ¡lido', async () => {
+          const res = await request(app)
+            .patch('/api/practicas/101/observaciones/10/resolver')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({ resuelta: 'no-es-booleano' });
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+        });
+
+        test('PATCH /api/practicas/:id/observaciones/:observacionId/resolver debe marcar como resuelta exitosamente (200)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'RECHAZADA'
+          });
+
+          jest.spyOn(prisma.observacion, 'findUnique').mockResolvedValue({
+            id: 10,
+            seccion: 'INSTRUMENTOS',
+            detalle: 'Ajustar preguntas',
+            resuelta: false,
+            revision: { id: 1, practicaId: 101 }
+          });
+
+          jest.spyOn(prisma.observacion, 'update').mockResolvedValue({
+            id: 10,
+            seccion: 'INSTRUMENTOS',
+            detalle: 'Ajustar preguntas',
+            resuelta: true
+          });
+
+          const res = await request(app)
+            .patch('/api/practicas/101/observaciones/10/resolver')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({ resuelta: true });
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.resuelta).toBe(true);
+        });
+
+        test('PATCH /api/practicas/:id/observaciones/:observacionId/resolver debe permitir deshacer resoluciÃ³n a resuelta=false (200)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'RECHAZADA'
+          });
+
+          jest.spyOn(prisma.observacion, 'findUnique').mockResolvedValue({
+            id: 10,
+            seccion: 'INSTRUMENTOS',
+            detalle: 'Ajustar preguntas',
+            resuelta: true,
+            revision: { id: 1, practicaId: 101 }
+          });
+
+          jest.spyOn(prisma.observacion, 'update').mockResolvedValue({
+            id: 10,
+            seccion: 'INSTRUMENTOS',
+            detalle: 'Ajustar preguntas',
+            resuelta: false
+          });
+
+          const res = await request(app)
+            .patch('/api/practicas/101/observaciones/10/resolver')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({ resuelta: false });
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.resuelta).toBe(false);
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // DICTAMEN DOCENTE: POST /api/practicas/:id/revisiones (PB4-B)
+      // -----------------------------------------------------------------
+      describe('EmisiÃ³n de Dictamen de RevisiÃ³n Docente (POST /api/practicas/:id/revisiones - PB4-B)', () => {
+        const otroDocenteId = 31;
+        const otroDocenteToken = generarTokenJwt({ usuarioId: otroDocenteId });
+        const adminId = 1;
+        const adminToken = generarTokenJwt({ usuarioId: adminId });
+
+        beforeEach(() => {
+          jest.spyOn(prisma.notificacion, 'create').mockResolvedValue({ id: 1, creadoEn: new Date() });
+          jest.spyOn(prisma.dispositivoUsuario, 'findMany').mockResolvedValue([]);
+        });
+
+        // Caso 1: APROBADA
+        test('Caso 1: POST /api/practicas/:id/revisiones debe emitir dictamen APROBADA exitosamente (201)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            titulo: 'PrÃ¡ctica UX Piloto',
+            estudianteId: estudianteId,
+            docenteId: docenteId,
+            estado: 'EN_REVISION'
+          });
+
+          let estadoActualizado = null;
+          jest.spyOn(prisma, '$transaction').mockImplementation(async (callback) => {
+            return callback({
+              revision: {
+                create: jest.fn().mockImplementation(({ data }) => {
+                  return Promise.resolve({
+                    id: 50,
+                    practicaId: 101,
+                    docenteId: docenteId,
+                    resultado: data.resultado,
+                    comentariosGenerales: data.comentariosGenerales,
+                    creadoEn: new Date(),
+                    observaciones: []
+                  });
+                })
+              },
+              practica: {
+                update: jest.fn().mockImplementation(({ data }) => {
+                  estadoActualizado = data.estado;
+                  return Promise.resolve({ id: 101, estado: data.estado });
+                })
+              }
+            });
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${docenteToken}`)
+            .send({
+              resultado: 'APROBADA',
+              comentariosGenerales: 'Propuesta metodolÃ³gica completa y vÃ¡lida para ejecuciÃ³n.'
+            });
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.resultado).toBe('APROBADA');
+          expect(estadoActualizado).toBe('APROBADA');
+        });
+
+        // Caso 2: RECHAZADA con observaciones
+        test('Caso 2: POST /api/practicas/:id/revisiones debe emitir dictamen RECHAZADA con observaciones no resueltas (201)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            titulo: 'PrÃ¡ctica UX Piloto',
+            estudianteId: estudianteId,
+            docenteId: docenteId,
+            estado: 'EN_REVISION'
+          });
+
+          let estadoActualizado = null;
+          jest.spyOn(prisma, '$transaction').mockImplementation(async (callback) => {
+            return callback({
+              revision: {
+                create: jest.fn().mockImplementation(({ data }) => {
+                  return Promise.resolve({
+                    id: 51,
+                    practicaId: 101,
+                    docenteId: docenteId,
+                    resultado: data.resultado,
+                    comentariosGenerales: data.comentariosGenerales,
+                    creadoEn: new Date(),
+                    observaciones: (data.observaciones?.create || []).map((obs, idx) => ({
+                      id: 200 + idx,
+                      revisionId: 51,
+                      seccion: obs.seccion,
+                      detalle: obs.detalle,
+                      resuelta: false
+                    }))
+                  });
+                })
+              },
+              practica: {
+                update: jest.fn().mockImplementation(({ data }) => {
+                  estadoActualizado = data.estado;
+                  return Promise.resolve({ id: 101, estado: data.estado });
+                })
+              }
+            });
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${docenteToken}`)
+            .send({
+              resultado: 'RECHAZADA',
+              comentariosGenerales: 'Ajustar instrumentos antes de autorizar las pruebas de laboratorio.',
+              observaciones: [
+                { seccion: 'INSTRUMENTOS', detalle: 'Completar los 10 reactivos de la escala SUS.' },
+                { seccion: 'METODOLOGIA', detalle: 'Definir el criterio de Ã©xito para cada tarea crÃ­tica.' }
+              ]
+            });
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.resultado).toBe('RECHAZADA');
+          expect(estadoActualizado).toBe('RECHAZADA');
+          expect(res.body.datos.observaciones.length).toBe(2);
+          expect(res.body.datos.observaciones[0].resuelta).toBe(false);
+          expect(res.body.datos.observaciones[1].resuelta).toBe(false);
+        });
+
+        // Caso 3: RBAC (Estudiante rechazado 403, Administrador autorizado 201)
+        test('Caso 3a: POST /api/practicas/:id/revisiones debe rechazar con 403 si el rol es ESTUDIANTE', async () => {
+          const res = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              resultado: 'APROBADA',
+              comentariosGenerales: 'Intento no autorizado'
+            });
+
+          expect(res.statusCode).toBe(403);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no tiene permisos');
+        });
+
+        test('Caso 3b: POST /api/practicas/:id/revisiones debe permitir dictamen por ADMINISTRADOR (201)', async () => {
+          jest.spyOn(prisma.usuario, 'findUnique').mockImplementation(({ where }) => {
+            if (where.id === adminId) {
+              return Promise.resolve({
+                id: adminId,
+                nombres: 'Admin',
+                apellidos: 'General',
+                correoInstitucional: 'admin@unicolmayor.edu.co',
+                activo: true,
+                rolId: 1,
+                rol: { nombre: 'ADMINISTRADOR' }
+              });
+            }
+            return Promise.resolve(null);
+          });
+
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            titulo: 'PrÃ¡ctica UX Piloto',
+            estudianteId: estudianteId,
+            docenteId: docenteId,
+            estado: 'EN_REVISION'
+          });
+
+          jest.spyOn(prisma, '$transaction').mockImplementation(async (callback) => {
+            return callback({
+              revision: {
+                create: jest.fn().mockResolvedValue({
+                  id: 52,
+                  practicaId: 101,
+                  docenteId: adminId,
+                  resultado: 'APROBADA',
+                  observaciones: []
+                })
+              },
+              practica: {
+                update: jest.fn().mockResolvedValue({ id: 101, estado: 'APROBADA' })
+              }
+            });
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({
+              resultado: 'APROBADA',
+              comentariosGenerales: 'AprobaciÃ³n institucional por administrador.'
+            });
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.exito).toBe(true);
+        });
+
+        // Caso 4: Docente no asignado (403)
+        test('Caso 4: POST /api/practicas/:id/revisiones debe rechazar con 403 si el docente no es el tutor asignado', async () => {
+          jest.spyOn(prisma.usuario, 'findUnique').mockImplementation(({ where }) => {
+            if (where.id === otroDocenteId) {
+              return Promise.resolve({
+                id: otroDocenteId,
+                nombres: 'Otro',
+                apellidos: 'Docente',
+                correoInstitucional: 'otrodocente@unicolmayor.edu.co',
+                activo: true,
+                rolId: 2,
+                rol: { nombre: 'DOCENTE' }
+              });
+            }
+            return Promise.resolve(null);
+          });
+
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            titulo: 'PrÃ¡ctica UX Piloto',
+            estudianteId: estudianteId,
+            docenteId: docenteId, // Asignado a docenteId (30), no a otroDocenteId (31)
+            estado: 'EN_REVISION'
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${otroDocenteToken}`)
+            .send({
+              resultado: 'APROBADA',
+              comentariosGenerales: 'Dictamen de docente no asignado'
+            });
+
+          expect(res.statusCode).toBe(403);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('docente tutor asignado');
+        });
+
+        // Caso 5: Estado invÃ¡lido (400)
+        test('Caso 5: POST /api/practicas/:id/revisiones debe rechazar con 400 si la prÃ¡ctica no estÃ¡ EN_REVISION', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            titulo: 'PrÃ¡ctica en Borrador',
+            estudianteId: estudianteId,
+            docenteId: docenteId,
+            estado: 'BORRADOR' // Estado no evaluable
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${docenteToken}`)
+            .send({
+              resultado: 'APROBADA',
+              comentariosGenerales: 'Dictamen prematuro'
+            });
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('EN_REVISION');
+        });
+
+        // Caso 6: PrÃ¡ctica inexistente (404)
+        test('Caso 6: POST /api/practicas/:id/revisiones debe retornar 404 si la prÃ¡ctica no existe', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue(null);
+
+          const res = await request(app)
+            .post('/api/practicas/9999/revisiones')
+            .set('Authorization', `Bearer ${docenteToken}`)
+            .send({
+              resultado: 'APROBADA',
+              comentariosGenerales: 'PrÃ¡ctica no encontrada'
+            });
+
+          expect(res.statusCode).toBe(404);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no existe');
+        });
+
+        // Caso 7: Payload invÃ¡lido (400)
+        test('Caso 7: POST /api/practicas/:id/revisiones debe retornar 400 si el resultado no es APROBADA ni RECHAZADA', async () => {
+          const res = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${docenteToken}`)
+            .send({
+              resultado: 'MODIFICAR', // Invalido
+              comentariosGenerales: 'Resultado fuera de enum'
+            });
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+        });
+
+        // Caso 8: Rechazo sin observaciones (Backend actual lo permite con array vacÃ­o y retorna 201)
+        test('Caso 8: POST /api/practicas/:id/revisiones permite RECHAZADA sin observaciones explÃ­citas (201)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            titulo: 'PrÃ¡ctica UX Piloto',
+            estudianteId: estudianteId,
+            docenteId: docenteId,
+            estado: 'EN_REVISION'
+          });
+
+          jest.spyOn(prisma, '$transaction').mockImplementation(async (callback) => {
+            return callback({
+              revision: {
+                create: jest.fn().mockResolvedValue({
+                  id: 53,
+                  practicaId: 101,
+                  docenteId: docenteId,
+                  resultado: 'RECHAZADA',
+                  comentariosGenerales: 'Rechazo con comentarios generales sin lista de observaciones detallada',
+                  observaciones: []
+                })
+              },
+              practica: {
+                update: jest.fn().mockResolvedValue({ id: 101, estado: 'RECHAZADA' })
+              }
+            });
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${docenteToken}`)
+            .send({
+              resultado: 'RECHAZADA',
+              comentariosGenerales: 'Se rechaza por inconsistencias metodolÃ³gicas globales.'
+            });
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos.resultado).toBe('RECHAZADA');
+        });
+      });
+
+    });
   });
 });
-
-
-
-
