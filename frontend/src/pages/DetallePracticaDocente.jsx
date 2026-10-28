@@ -1,16 +1,17 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigation, RUTAS } from '../context/NavigationContext.jsx';
 import { practicasService } from '../services/practicasService.js';
 import { documentosService } from '../services/documentosService.js';
 
-// ReutilizaciÃ³n directa de componentes especializados de PB4-A
+// Reutilización directa de componentes especializados de PB4-A
 import { HistorialRevisiones } from '../components/practicas/HistorialRevisiones.jsx';
 import { SeccionInstrumentos } from '../components/practicas/SeccionInstrumentos.jsx';
 import { SeccionDocumentos } from '../components/practicas/SeccionDocumentos.jsx';
+import { FormularioDictamenDocente } from '../components/practicas/FormularioDictamenDocente.jsx';
 
 /**
- * Vista de Detalle y EvaluaciÃ³n para el Docente Tutor (PB4-B-01).
- * Reutiliza los componentes atÃ³micos de instrumentos, documentos e historial en modo lectura (esEditable={false}).
+ * Vista de Detalle y Evaluación para el Docente Tutor (PB4-B-01).
+ * Reutiliza los componentes atómicos de instrumentos, documentos e historial en modo lectura (esEditable={false}).
  */
 export function DetallePracticaDocente({ practicaId: propId }) {
   const { navegar } = useNavigation();
@@ -38,7 +39,7 @@ export function DetallePracticaDocente({ practicaId: propId }) {
 
   const cargarDetalle = useCallback(async () => {
     if (!practicaId) {
-      setErrorGlobal('No se especificÃ³ un identificador de prÃ¡ctica vÃ¡lido.');
+      setErrorGlobal('No se especificó un identificador de práctica válido.');
       setCargando(false);
       return;
     }
@@ -55,9 +56,9 @@ export function DetallePracticaDocente({ practicaId: propId }) {
       setInstrumentos(datosPractica.instrumentos || []);
       setDocumentos(datosPractica.documentos || []);
       setRevisiones(datosRevisiones || []);
-      setAnuncioLive(`PrÃ¡ctica "${datosPractica.titulo}" cargada para revisiÃ³n docente.`);
+      setAnuncioLive(`Práctica "${datosPractica.titulo}" cargada para revisión docente.`);
     } catch (err) {
-      const msg = err.message || 'No fue posible cargar el detalle de la prÃ¡ctica solicitada.';
+      const msg = err.message || 'No fue posible cargar el detalle de la práctica solicitada.';
       setErrorGlobal(msg);
       setAnuncioLive(`Error: ${msg}`);
     } finally {
@@ -88,10 +89,26 @@ export function DetallePracticaDocente({ practicaId: propId }) {
     }
   };
 
+  // Manejo de emisión de dictamen metodológico docente (PB4-B-02)
+  const handleDictamenExitoso = (nuevaRevision) => {
+    setPractica((prev) => ({
+      ...prev,
+      estado: nuevaRevision.resultado
+    }));
+    setRevisiones((prev) => [nuevaRevision, ...prev]);
+    const esAprob = nuevaRevision.resultado === 'APROBADA';
+    setMensajeExito(
+      esAprob
+        ? 'Dictamen favorable registrado exitosamente. La práctica ha sido APROBADA.'
+        : 'Dictamen de rechazo registrado exitosamente. La práctica requiere subsanación de observaciones.'
+    );
+    setAnuncioLive(`Dictamen metodológico registrado: Práctica ${nuevaRevision.resultado}.`);
+  };
+
   if (cargando) {
     return (
       <div className="contenedor-detalle-practica" role="main">
-        <p className="texto-cargando" role="status">Cargando prÃ¡ctica para revisiÃ³n docente...</p>
+        <p className="texto-cargando" role="status">Cargando práctica para revisión docente...</p>
       </div>
     );
   }
@@ -100,7 +117,7 @@ export function DetallePracticaDocente({ practicaId: propId }) {
     return (
       <div className="contenedor-detalle-practica" role="main">
         <div className="alerta-error" role="alert">
-          <h2>Error al cargar la prÃ¡ctica</h2>
+          <h2>Error al cargar la práctica</h2>
           <p>{errorGlobal}</p>
           <button
             type="button"
@@ -124,18 +141,18 @@ export function DetallePracticaDocente({ practicaId: propId }) {
         {anuncioLive}
       </div>
 
-      {/* NavegaciÃ³n Contextual */}
-      <nav className="migas-navegacion" aria-label="NavegaciÃ³n contextual">
+      {/* Navegación Contextual */}
+      <nav className="migas-navegacion" aria-label="Navegación contextual">
         <button
           type="button"
           className="btn-volver-enlace"
           onClick={() => navegar(RUTAS.DOCENTE)}
         >
-          &larr; Volver a la Bandeja de PrÃ¡cticas Docente
+          &larr; Volver a la Bandeja de Prácticas Docente
         </button>
       </nav>
 
-      {/* Cabecera Principal de la PrÃ¡ctica */}
+      {/* Cabecera Principal de la Práctica */}
       <header className="detalle-header-card">
         <div className="detalle-header-top">
           <div className="detalle-header-titulos">
@@ -170,7 +187,7 @@ export function DetallePracticaDocente({ practicaId: propId }) {
           </div>
 
           <div className="detalle-meta-item">
-            <span className="meta-etiqueta">Fecha de EnvÃ­o / ActualizaciÃ³n:</span>
+            <span className="meta-etiqueta">Fecha de Envío / Actualización:</span>
             <span className="meta-valor">
               {practica.actualizadoEn
                 ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'long' }).format(new Date(practica.actualizadoEn))
@@ -180,45 +197,42 @@ export function DetallePracticaDocente({ practicaId: propId }) {
         </div>
       </header>
 
-      {/* Mensajes de Ã©xito globales */}
+      {/* Mensajes de éxito globales */}
       {mensajeExito && (
         <div className="alerta-exito" role="status" aria-live="polite">
           {mensajeExito}
         </div>
       )}
 
-      {/* Banner de Estado para la RevisiÃ³n Docente */}
+      {/* Banner de Estado para la Revisión Docente */}
       {esEnRevision && (
         <div className="banner-estado-revision" role="status" style={{ borderLeft: '4px solid #0f766e', backgroundColor: '#f0fdfa', padding: '1rem', borderRadius: '6px', margin: '1.5rem 0' }}>
-          <p>
-            <strong>PrÃ¡ctica lista para dictamen docente:</strong> Esta propuesta fue enviada por el estudiante con sus instrumentos y consentimiento informado completos. Revise los elementos a continuaciÃ³n para proceder con la emisiÃ³n del dictamen metodolÃ³gico.
-          </p>
-          <p style={{ marginTop: '0.5rem', color: '#0f766e', fontSize: '0.9rem' }}>
-            <em>(El formulario interactivo de emisiÃ³n de dictamen Aprobada/Rechazada se habilitarÃ¡ en la siguiente unidad PB4-B-02).</em>
+          <p style={{ margin: 0 }}>
+            <strong>Práctica lista para dictamen docente:</strong> Esta propuesta fue enviada por el estudiante con sus instrumentos y consentimiento informado completos. Revise los artefactos metodológicos abajo y emita su decisión en la sección de dictamen.
           </p>
         </div>
       )}
 
       {esAprobada && (
         <div className="banner-estado-aprobada" role="status" style={{ borderLeft: '4px solid #16a34a', backgroundColor: '#f0fdf4', padding: '1rem', borderRadius: '6px', margin: '1.5rem 0' }}>
-          <p>
-            <strong>PrÃ¡ctica Aprobada:</strong> Esta prÃ¡ctica ya cuenta con dictamen favorable y sus instrumentos han sido validados institucionalmente.
+          <p style={{ margin: 0 }}>
+            <strong>Práctica Aprobada:</strong> Esta práctica ya cuenta con dictamen favorable y sus instrumentos han sido validados institucionalmente.
           </p>
         </div>
       )}
 
       {esRechazada && (
         <div className="banner-estado-rechazada" role="status" style={{ borderLeft: '4px solid #dc2626', backgroundColor: '#fef2f2', padding: '1rem', borderRadius: '6px', margin: '1.5rem 0' }}>
-          <p>
-            <strong>PrÃ¡ctica con Observaciones:</strong> El estudiante se encuentra subsanando las observaciones emitidas en revisiones anteriores.
+          <p style={{ margin: 0 }}>
+            <strong>Práctica con Observaciones:</strong> El estudiante se encuentra subsanando las observaciones emitidas en revisiones anteriores.
           </p>
         </div>
       )}
 
-      {/* Alcance MetodolÃ³gico */}
+      {/* Alcance Metodológico */}
       <section className="detalle-metodologico-card" aria-labelledby="seccion-metodologia-doc">
         <h2 id="seccion-metodologia-doc" className="seccion-titulo-detalle">
-          Alcance y Objetivo MetodolÃ³gico
+          Alcance y Objetivo Metodológico
         </h2>
         <div className="resumen-metodologico-grid">
           <div className="resumen-metodologico-item">
@@ -228,7 +242,7 @@ export function DetallePracticaDocente({ practicaId: propId }) {
         </div>
       </section>
 
-      {/* ReutilizaciÃ³n de Componentes de PB4-A en Modo Solo Lectura (esEditable=false) */}
+      {/* Reutilización de Componentes de PB4-A en Modo Solo Lectura (esEditable=false) */}
       <SeccionInstrumentos
         instrumentos={instrumentos}
         esEditable={false}
@@ -240,6 +254,16 @@ export function DetallePracticaDocente({ practicaId: propId }) {
         onDescargarDocumento={handleDescargarDocumento}
       />
 
+      {/* Formulario interactivo de Emisión de Dictamen Docente (PB4-B-02) */}
+      {esEnRevision && (
+        <FormularioDictamenDocente
+          practicaId={practicaId}
+          tituloPractica={practica.titulo}
+          onDictamenExitoso={handleDictamenExitoso}
+        />
+      )}
+
+      {/* Historial Cronológico de Revisiones */}
       <HistorialRevisiones
         revisiones={revisiones}
         cargando={false}
