@@ -1,19 +1,19 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigation, RUTAS } from '../context/NavigationContext.jsx';
 import { practicasService } from '../services/practicasService.js';
 
 const FILTROS_ESTADO = [
-  { valor: 'TODOS', etiqueta: 'Todas las PrÃ¡cticas' },
-  { valor: 'EN_REVISION', etiqueta: 'Pendientes de RevisiÃ³n' },
+  { valor: 'TODOS', etiqueta: 'Todas las Prácticas' },
+  { valor: 'EN_REVISION', etiqueta: 'Pendientes de Revisión' },
   { valor: 'APROBADA', etiqueta: 'Aprobadas' },
   { valor: 'RECHAZADA', etiqueta: 'Con Observaciones' },
-  { valor: 'BORRADOR', etiqueta: 'En FormulaciÃ³n' }
+  { valor: 'BORRADOR', etiqueta: 'En Formulación' }
 ];
 
 /**
- * Bandeja Funcional de PrÃ¡cticas de Usabilidad para el Docente Tutor (PB4-B-01).
- * Permite consultar, filtrar y navegar a las prÃ¡cticas asignadas y pendientes de revisiÃ³n metodolÃ³gica.
+ * Bandeja Funcional de Prácticas de Usabilidad para el Docente Tutor (PB4-B-01).
+ * Permite consultar, filtrar y navegar a las prácticas asignadas y pendientes de revisión metodológica.
  */
 export function PanelDocente() {
   const { usuario } = useAuth();
@@ -25,16 +25,16 @@ export function PanelDocente() {
   const [filtroEstado, setFiltroEstado] = useState('TODOS');
   const [anuncioLive, setAnuncioLive] = useState('');
 
-  // Cargar prÃ¡cticas asociadas al docente
+  // Cargar prácticas asociadas al docente
   const cargarPracticas = useCallback(async () => {
     setCargando(true);
     setError('');
     try {
       const datos = await practicasService.listar();
       setPracticas(datos);
-      setAnuncioLive(`Bandeja docente actualizada: ${datos.length} prÃ¡cticas encontradas.`);
+      setAnuncioLive(`Bandeja docente actualizada: ${datos.length} prácticas encontradas.`);
     } catch (err) {
-      const msg = err.message || 'No fue posible cargar las prÃ¡cticas asignadas.';
+      const msg = err.message || 'No fue posible cargar las prácticas asignadas.';
       setError(msg);
       setAnuncioLive(`Error: ${msg}`);
     } finally {
@@ -46,9 +46,9 @@ export function PanelDocente() {
     cargarPracticas();
   }, [cargarPracticas]);
 
-  // Filtrado en memoria de las prÃ¡cticas asignadas o en revisiÃ³n
+  // Filtrado en memoria de las prácticas asignadas o en revisión
   const practicasFiltradas = practicas.filter((p) => {
-    // Si es docente, mostrar aquellas donde es tutor o que estÃ©n en revisiÃ³n
+    // Si es docente, mostrar aquellas donde es tutor o que estén en revisión
     const esTutor = p.docenteId === usuario?.id || usuario?.rol === 'ADMINISTRADOR';
     if (!esTutor && p.estado !== 'EN_REVISION') return false;
 
@@ -56,7 +56,7 @@ export function PanelDocente() {
     return p.estado === filtroEstado;
   });
 
-  // MÃ©tricas rÃ¡pidas para resumen en tarjetas
+  // Métricas rápidas para resumen en tarjetas
   const totalEnRevision = practicas.filter((p) => p.estado === 'EN_REVISION').length;
   const totalAprobadas = practicas.filter((p) => p.estado === 'APROBADA').length;
   const totalRechazadas = practicas.filter((p) => p.estado === 'RECHAZADA').length;
@@ -69,21 +69,21 @@ export function PanelDocente() {
 
   return (
     <div className="panel-container" role="main" aria-labelledby="titulo-panel-docente">
-      {/* RegiÃ³n ARIA Live para anunciar cambios a tecnologÃ­as de asistencia (WCAG 4.1.3) */}
+      {/* Región ARIA Live para anunciar cambios a tecnologías de asistencia (WCAG 4.1.3) */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {anuncioLive}
       </div>
 
       <div className="content-welcome-card">
-        <h1 id="titulo-panel-docente">Bandeja de RevisiÃ³n Docente â€” GesLab</h1>
+        <h1 id="titulo-panel-docente">Bandeja de Revisión Docente â€” GesLab</h1>
         <p>
-          Bienvenido(a), profesor(a) <strong>{usuario?.nombres} {usuario?.apellidos}</strong>. Supervise y dictamine las prÃ¡cticas de usabilidad, consentimientos y herramientas metodolÃ³gicas formuladas por los estudiantes.
+          Bienvenido(a), profesor(a) <strong>{usuario?.nombres} {usuario?.apellidos}</strong>. Supervise y dictamine las prácticas de usabilidad, consentimientos y herramientas metodológicas formuladas por los estudiantes.
         </p>
       </div>
 
-      {/* Tarjetas de Resumen RÃ¡pido de Estados */}
+      {/* Tarjetas de Resumen Rápido de Estados */}
       <section aria-labelledby="titulo-resumen-metricas">
-        <h2 id="titulo-resumen-metricas" className="sr-only">Resumen de PrÃ¡cticas</h2>
+        <h2 id="titulo-resumen-metricas" className="sr-only">Resumen de Prácticas</h2>
         <div className="system-modules-grid">
           <div
             className={`module-card ${filtroEstado === 'EN_REVISION' ? 'tarjeta-filtro-activa' : ''}`}
@@ -91,12 +91,12 @@ export function PanelDocente() {
             role="button"
             tabIndex="0"
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCambiarFiltro('EN_REVISION'); }}
-            aria-label={`Filtrar pendientes: ${totalEnRevision} prÃ¡cticas en revisiÃ³n`}
+            aria-label={`Filtrar pendientes: ${totalEnRevision} prácticas en revisión`}
           >
             <div className="module-icon-wrap" aria-hidden="true">ðŸ“‹</div>
             <div className="module-info">
-              <h3>Pendientes de RevisiÃ³n</h3>
-              <p><strong>{totalEnRevision}</strong> prÃ¡ctica{totalEnRevision !== 1 ? 's' : ''} esperando su dictamen metodolÃ³gico.</p>
+              <h3>Pendientes de Revisión</h3>
+              <p><strong>{totalEnRevision}</strong> práctica{totalEnRevision !== 1 ? 's' : ''} esperando su dictamen metodológico.</p>
             </div>
           </div>
 
@@ -106,12 +106,12 @@ export function PanelDocente() {
             role="button"
             tabIndex="0"
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCambiarFiltro('APROBADA'); }}
-            aria-label={`Filtrar aprobadas: ${totalAprobadas} prÃ¡cticas aprobadas`}
+            aria-label={`Filtrar aprobadas: ${totalAprobadas} prácticas aprobadas`}
           >
-            <div className="module-icon-wrap" aria-hidden="true">âœ“</div>
+            <div className="module-icon-wrap" aria-hidden="true">✓</div>
             <div className="module-info">
-              <h3>PrÃ¡cticas Aprobadas</h3>
-              <p><strong>{totalAprobadas}</strong> prÃ¡ctica{totalAprobadas !== 1 ? 's' : ''} listas para pruebas y reservas.</p>
+              <h3>Prácticas Aprobadas</h3>
+              <p><strong>{totalAprobadas}</strong> práctica{totalAprobadas !== 1 ? 's' : ''} listas para pruebas y reservas.</p>
             </div>
           </div>
 
@@ -121,26 +121,26 @@ export function PanelDocente() {
             role="button"
             tabIndex="0"
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCambiarFiltro('RECHAZADA'); }}
-            aria-label={`Filtrar con observaciones: ${totalRechazadas} prÃ¡cticas con observaciones`}
+            aria-label={`Filtrar con observaciones: ${totalRechazadas} prácticas con observaciones`}
           >
             <div className="module-icon-wrap" aria-hidden="true">âš ï¸</div>
             <div className="module-info">
               <h3>Con Observaciones</h3>
-              <p><strong>{totalRechazadas}</strong> propuesta{totalRechazadas !== 1 ? 's' : ''} en proceso de correcciÃ³n por el estudiante.</p>
+              <p><strong>{totalRechazadas}</strong> propuesta{totalRechazadas !== 1 ? 's' : ''} en proceso de corrección por el estudiante.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SecciÃ³n Principal de Bandeja y Filtros */}
+      {/* Sección Principal de Bandeja y Filtros */}
       <section className="seccion-bandeja-docente" aria-labelledby="titulo-listado-docente" style={{ marginTop: '2rem' }}>
         <div className="bandeja-header-flex">
           <h2 id="titulo-listado-docente" className="seccion-titulo-detalle">
-            PrÃ¡cticas Asignadas ({practicasFiltradas.length})
+            Prácticas Asignadas ({practicasFiltradas.length})
           </h2>
 
           {/* Filtros Accesibles por Estado */}
-          <div className="filtros-estado-docente" role="group" aria-label="Filtrar prÃ¡cticas por estado">
+          <div className="filtros-estado-docente" role="group" aria-label="Filtrar prácticas por estado">
             {FILTROS_ESTADO.map((f) => (
               <button
                 key={f.valor}
@@ -156,7 +156,7 @@ export function PanelDocente() {
         </div>
 
         {cargando && (
-          <p className="texto-cargando" role="status">Cargando bandeja de prÃ¡cticas...</p>
+          <p className="texto-cargando" role="status">Cargando bandeja de prácticas...</p>
         )}
 
         {error && (
@@ -168,12 +168,12 @@ export function PanelDocente() {
         {!cargando && !error && practicasFiltradas.length === 0 && (
           <div className="sin-instrumentos-box" role="status">
             <p>
-              No se encontraron prÃ¡cticas asignadas bajo el filtro <strong>"{FILTROS_ESTADO.find((f) => f.valor === filtroEstado)?.etiqueta}"</strong>.
+              No se encontraron prácticas asignadas bajo el filtro <strong>"{FILTROS_ESTADO.find((f) => f.valor === filtroEstado)?.etiqueta}"</strong>.
             </p>
           </div>
         )}
 
-        {/* Listado de PrÃ¡cticas */}
+        {/* Listado de Prácticas */}
         {!cargando && !error && practicasFiltradas.length > 0 && (
           <div className="practicas-grid-lista" role="list">
             {practicasFiltradas.map((p) => {
@@ -221,10 +221,10 @@ export function PanelDocente() {
                     <button
                       type="button"
                       className="btn-primario"
-                      onClick={() => navegar(`/docente/practica?id=${p.id}`, `RevisiÃ³n de ${p.titulo}`)}
-                      aria-label={`Revisar prÃ¡ctica ${p.titulo} de ${nombreEstudiante}`}
+                      onClick={() => navegar(`/docente/practica?id=${p.id}`, `Revisión de ${p.titulo}`)}
+                      aria-label={`Revisar práctica ${p.titulo} de ${nombreEstudiante}`}
                     >
-                      {esPendienteRevision ? 'Revisar PrÃ¡ctica' : 'Ver Detalle'} &rarr;
+                      {esPendienteRevision ? 'Revisar Práctica' : 'Ver Detalle'} &rarr;
                     </button>
                   </div>
                 </article>

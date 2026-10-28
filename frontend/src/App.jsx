@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { NavigationProvider, useNavigation, RUTAS } from './context/NavigationContext.jsx';
 import { Login } from './pages/Login.jsx';
@@ -35,7 +35,7 @@ function EnrutadorPrincipal() {
     );
   }
 
-  // 3. Ruta: Detalle y RevisiÃ³n de PrÃ¡ctica del Docente (/docente/practica?id=...)
+  // 3. Ruta: Detalle y Revisión de Práctica del Docente (/docente/practica?id=...)
   if (ruta.startsWith('/docente/practica')) {
     return (
       <RutaProtegida rolesPermitidos={['DOCENTE', 'ADMINISTRADOR']}>

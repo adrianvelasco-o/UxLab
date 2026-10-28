@@ -1,15 +1,15 @@
-﻿import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { ModalConfirmarEliminar } from './ModalConfirmarEliminar.jsx';
 
 const TIPOS_INSTRUMENTO = [
-  { valor: 'GUIA_OBSERVACION', etiqueta: 'GuÃ­a de ObservaciÃ³n' },
+  { valor: 'GUIA_OBSERVACION', etiqueta: 'Guía de Observación' },
   { valor: 'CUESTIONARIO_PRE_TEST', etiqueta: 'Cuestionario Pre-Test' },
   { valor: 'BANCO_TAREAS', etiqueta: 'Banco de Tareas' },
   { valor: 'CUESTIONARIO_POST_TEST', etiqueta: 'Cuestionario Post-Test' }
 ];
 
 /**
- * Componente modular para gestiÃ³n de instrumentos de evaluaciÃ³n UX (PB3 / SB4).
+ * Componente modular para gestión de instrumentos de evaluación UX (PB3 / SB4).
  */
 export function SeccionInstrumentos({
   instrumentos = [],
@@ -25,7 +25,7 @@ export function SeccionInstrumentos({
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState('');
 
-  // Estados para modal accesible de confirmaciÃ³n de eliminaciÃ³n
+  // Estados para modal accesible de confirmación de eliminación
   const [itemAEliminar, setItemAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
   const triggerEliminarRef = useRef(null);
@@ -44,7 +44,7 @@ export function SeccionInstrumentos({
       try {
         contenidoParsed = JSON.parse(contenido);
       } catch (err) {
-        setErrorForm('El contenido estructurado debe ser un JSON vÃ¡lido o dejarse vacÃ­o.');
+        setErrorForm('El contenido estructurado debe ser un JSON válido o dejarse vacío.');
         return;
       }
     }
@@ -57,7 +57,7 @@ export function SeccionInstrumentos({
         instrucciones: instrucciones.trim() || undefined,
         contenido: contenidoParsed || undefined
       });
-      // Limpiar formulario al guardar con Ã©xito
+      // Limpiar formulario al guardar con éxito
       setNombre('');
       setInstrucciones('');
       setContenido('');
@@ -91,7 +91,7 @@ export function SeccionInstrumentos({
     <section className="detalle-instrumentos-card" aria-labelledby="seccion-instrumentos">
       <div className="seccion-header-flex">
         <h2 id="seccion-instrumentos" className="seccion-titulo-detalle">
-          Instrumentos de EvaluaciÃ³n ({instrumentos.length})
+          Instrumentos de Evaluación ({instrumentos.length})
         </h2>
         {esEditable && (
           <button
@@ -115,7 +115,7 @@ export function SeccionInstrumentos({
           aria-labelledby="titulo-form-instrumento"
         >
           <h3 id="titulo-form-instrumento" className="form-subtitulo">
-            Registrar Nuevo Instrumento de EvaluaciÃ³n
+            Registrar Nuevo Instrumento de Evaluación
           </h3>
 
           {errorForm && (
@@ -149,13 +149,13 @@ export function SeccionInstrumentos({
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               className="input-campo"
-              placeholder="Ej: GuÃ­a de observaciÃ³n tareas crÃ­ticas"
+              placeholder="Ej: Guía de observación tareas críticas"
               required
             />
           </div>
 
           <div className="form-grupo">
-            <label htmlFor="instrucciones-instrumento-txt">Instrucciones de aplicaciÃ³n (Opcional):</label>
+            <label htmlFor="instrucciones-instrumento-txt">Instrucciones de aplicación (Opcional):</label>
             <textarea
               id="instrucciones-instrumento-txt"
               value={instrucciones}
@@ -174,7 +174,7 @@ export function SeccionInstrumentos({
               onChange={(e) => setContenido(e.target.value)}
               className="textarea-campo fuente-mono"
               rows="4"
-              placeholder='Ej: { "preguntas": ["Â¿La interfaz fue clara?", "Â¿EncontrÃ³ obstÃ¡culos?"] }'
+              placeholder='Ej: { "preguntas": ["¿La interfaz fue clara?", "¿Encontró obstáculos?"] }'
             />
           </div>
 
@@ -203,8 +203,8 @@ export function SeccionInstrumentos({
       {instrumentos.length === 0 ? (
         <div className="sin-instrumentos-box">
           <p>
-            No hay instrumentos de evaluaciÃ³n registrados aÃºn.{' '}
-            {esEditable && 'Agregue al menos uno para poder solicitar la revisiÃ³n docente (RN02).'}
+            No hay instrumentos de evaluación registrados aún.{' '}
+            {esEditable && 'Agregue al menos uno para poder solicitar la revisión docente (RN02).'}
           </p>
         </div>
       ) : (
@@ -241,10 +241,10 @@ export function SeccionInstrumentos({
         </div>
       )}
 
-      {/* Modal accesible de confirmaciÃ³n para eliminar instrumento (Reemplazo WCAG de window.confirm) */}
+      {/* Modal accesible de confirmación para eliminar instrumento (Reemplazo WCAG de window.confirm) */}
       <ModalConfirmarEliminar
         abierto={Boolean(itemAEliminar)}
-        titulo="Eliminar Instrumento de EvaluaciÃ³n"
+        titulo="Eliminar Instrumento de Evaluación"
         itemNombre={itemAEliminar?.nombre || ''}
         onCerrar={() => setItemAEliminar(null)}
         onConfirmar={handleConfirmarEliminar}

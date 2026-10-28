@@ -1,13 +1,13 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 /**
- * Modal accesible de confirmaciÃ³n para eliminaciÃ³n (Reemplazo de window.confirm).
- * Implementa role="alertdialog", aria-modal="true", y Focus Trap cÃ­clico.
+ * Modal accesible de confirmación para eliminación (Reemplazo de window.confirm).
+ * Implementa role="alertdialog", aria-modal="true", y Focus Trap cíclico.
  */
 export function ModalConfirmarEliminar({
   abierto,
-  titulo = 'Confirmar EliminaciÃ³n',
-  mensaje = 'Â¿EstÃ¡ seguro de eliminar este elemento? Esta acciÃ³n no se puede deshacer.',
+  titulo = 'Confirmar Eliminación',
+  mensaje = '¿Está seguro de eliminar este elemento? Esta acción no se puede deshacer.',
   itemNombre = '',
   onCerrar,
   onConfirmar,
@@ -108,7 +108,7 @@ export function ModalConfirmarEliminar({
               }
             }}
             disabled={eliminando}
-            aria-label="Cerrar ventana de confirmaciÃ³n"
+            aria-label="Cerrar ventana de confirmación"
           >
             &times;
           </button>
@@ -118,7 +118,7 @@ export function ModalConfirmarEliminar({
           <p id="desc-modal-eliminar">
             {itemNombre ? (
               <>
-                Â¿EstÃ¡ seguro de eliminar <strong>"{itemNombre}"</strong>? Esta acciÃ³n no se puede deshacer.
+                ¿Está seguro de eliminar <strong>"{itemNombre}"</strong>? Esta acción no se puede deshacer.
               </>
             ) : (
               mensaje
@@ -154,7 +154,7 @@ export function ModalConfirmarEliminar({
                 <span>Eliminando...</span>
               </>
             ) : (
-              <span>SÃ­, Eliminar</span>
+              <span>Sí, Eliminar</span>
             )}
           </button>
         </div>

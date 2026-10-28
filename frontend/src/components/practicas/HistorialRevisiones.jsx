@@ -1,7 +1,7 @@
-﻿import React from 'react';
+import React from 'react';
 
 /**
- * Componente accesible para desplegar el historial cronolÃ³gico de revisiones docentes (CU10 / HU07).
+ * Componente accesible para desplegar el historial cronológico de revisiones docentes (CU10 / HU07).
  */
 export function HistorialRevisiones({ revisiones = [], cargando = false }) {
   if (cargando) {
@@ -23,7 +23,7 @@ export function HistorialRevisiones({ revisiones = [], cargando = false }) {
 
       {revisiones.length === 0 ? (
         <div className="sin-instrumentos-box">
-          <p>No se registran revisiones docentes formales para esta prÃ¡ctica todavÃ­a.</p>
+          <p>No se registran revisiones docentes formales para esta práctica todavía.</p>
         </div>
       ) : (
         <div className="revisiones-timeline-lista" role="list">
@@ -56,7 +56,7 @@ export function HistorialRevisiones({ revisiones = [], cargando = false }) {
                     className={`badge-estado ${esAprobada ? 'badge-aprobada' : 'badge-rechazada'}`}
                     role="status"
                   >
-                    {esAprobada ? 'âœ“ APROBADA' : 'âœ— RECHAZADA'}
+                    {esAprobada ? '✓ APROBADA' : '✗ RECHAZADA'}
                   </span>
                 </div>
 

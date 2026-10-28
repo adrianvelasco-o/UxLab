@@ -1,7 +1,7 @@
-﻿import React from 'react';
+import React from 'react';
 
 /**
- * Componente accesible para gestiÃ³n y resoluciÃ³n de observaciones docentes (CU11 / HU12 / RN04).
+ * Componente accesible para gestión y resolución de observaciones docentes (CU11 / HU12 / RN04).
  */
 export function ObservacionesRevision({
   revisiones = [],
@@ -20,20 +20,20 @@ export function ObservacionesRevision({
     <section className="observaciones-revision-section" aria-labelledby="titulo-observaciones-revision">
       <div className="observaciones-header-box">
         <h2 id="titulo-observaciones-revision" className="seccion-titulo-detalle">
-          Observaciones MetodolÃ³gicas del Docente Tutor
+          Observaciones Metodológicas del Docente Tutor
         </h2>
         <span
           className={`badge-estado ${pendientesCount === 0 ? 'badge-aprobada' : 'badge-rechazada'}`}
           role="status"
         >
           {pendientesCount === 0
-            ? 'âœ“ Todas las observaciones resueltas'
+            ? '✓ Todas las observaciones resueltas'
             : `! ${pendientesCount} de ${totalObs} observaciones pendientes`}
         </span>
       </div>
 
       <p className="observaciones-ayuda-texto">
-        Revise cada una de las observaciones emitidas por su docente tutor. Puede marcar cada observaciÃ³n como resuelta a medida que realice los ajustes solicitados en los instrumentos o documentos de la prÃ¡ctica.
+        Revise cada una de las observaciones emitidas por su docente tutor. Puede marcar cada observación como resuelta a medida que realice los ajustes solicitados en los instrumentos o documentos de la práctica.
       </p>
 
       <ul className="lista-observaciones-items" role="list">
@@ -50,12 +50,12 @@ export function ObservacionesRevision({
               <div className="observacion-item-contenido">
                 <div className="observacion-item-meta">
                   <span className="observacion-seccion-badge">
-                    SecciÃ³n: {obs.seccion}
+                    Sección: {obs.seccion}
                   </span>
                   <span
                     className={`badge-obs-status ${estaResuelta ? 'badge-obs-resuelta' : 'badge-obs-pendiente'}`}
                   >
-                    {estaResuelta ? 'âœ“ Resuelta' : '! Pendiente de correcciÃ³n'}
+                    {estaResuelta ? '✓ Resuelta' : '! Pendiente de corrección'}
                   </span>
                 </div>
                 <p className="observacion-detalle-texto">{obs.detalle}</p>
@@ -69,15 +69,15 @@ export function ObservacionesRevision({
                     disabled={estaResolviendo}
                     onClick={() => onResolverObservacion(obs.id, !estaResuelta)}
                     aria-label={estaResuelta
-                      ? `Reabrir observaciÃ³n de secciÃ³n ${obs.seccion}`
-                      : `Marcar como resuelta observaciÃ³n de secciÃ³n ${obs.seccion}`}
+                      ? `Reabrir observación de sección ${obs.seccion}`
+                      : `Marcar como resuelta observación de sección ${obs.seccion}`}
                   >
                     {estaResolviendo ? (
                       'Actualizando...'
                     ) : estaResuelta ? (
                       'Deshacer / Reabrir'
                     ) : (
-                      'âœ“ Marcar como resuelta'
+                      '✓ Marcar como resuelta'
                     )}
                   </button>
                 </div>

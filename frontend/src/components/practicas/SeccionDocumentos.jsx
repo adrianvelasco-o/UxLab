@@ -1,16 +1,16 @@
-﻿import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 const TIPOS_DOCUMENTO = [
   { valor: 'CONSENTIMIENTO_INFORMADO', etiqueta: 'Consentimiento Informado (Requisito RN02)', destacado: true },
   { valor: 'PROTOCOLO_PRUEBA', etiqueta: 'Protocolo de Prueba UX' },
-  { valor: 'GUIA_ACTIVIDAD', etiqueta: 'GuÃ­a de Actividades' },
+  { valor: 'GUIA_ACTIVIDAD', etiqueta: 'Guía de Actividades' },
   { valor: 'REPORTE_FINAL', etiqueta: 'Reporte Final' },
   { valor: 'EVIDENCIA', etiqueta: 'Evidencia Documental' },
   { valor: 'OTRO', etiqueta: 'Otro Documento' }
 ];
 
 /**
- * Componente modular para gestiÃ³n y carga de documentos PDF (PB3 / SB4).
+ * Componente modular para gestión y carga de documentos PDF (PB3 / SB4).
  */
 export function SeccionDocumentos({
   documentos = [],
@@ -44,7 +44,7 @@ export function SeccionDocumentos({
 
     const maxBytes = 10 * 1024 * 1024; // 10 MB
     if (archivo.size > maxBytes) {
-      setErrorDocumento('El archivo supera el tamaÃ±o mÃ¡ximo permitido de 10 MB.');
+      setErrorDocumento('El archivo supera el tamaño máximo permitido de 10 MB.');
       setArchivoSeleccionado(null);
       if (refInputArchivo.current) refInputArchivo.current.value = '';
       return;
@@ -92,12 +92,12 @@ export function SeccionDocumentos({
         </h2>
         {tieneConsentimiento && (
           <span className="badge-consentimiento-ok" role="status">
-            âœ“ Consentimiento Informado Adjunto
+            ✓ Consentimiento Informado Adjunto
           </span>
         )}
       </div>
 
-      {/* Zona de subida de archivos PDF para la prÃ¡ctica */}
+      {/* Zona de subida de archivos PDF para la práctica */}
       {esEditable && (
         <form
           onSubmit={handleSubirPdf}
@@ -133,7 +133,7 @@ export function SeccionDocumentos({
             </div>
 
             <div className="form-grupo">
-              <label htmlFor="input-archivo-pdf">Archivo PDF (MÃ¡x. 10 MB): *</label>
+              <label htmlFor="input-archivo-pdf">Archivo PDF (Máx. 10 MB): *</label>
               <input
                 ref={refInputArchivo}
                 id="input-archivo-pdf"
@@ -170,24 +170,24 @@ export function SeccionDocumentos({
       {documentos.length === 0 ? (
         <div className="sin-instrumentos-box">
           <p>
-            No hay documentos adjuntos a esta prÃ¡ctica aÃºn.{' '}
+            No hay documentos adjuntos a esta práctica aún.{' '}
             {esEditable && (
               <strong>
-                Es obligatorio subir el documento de Consentimiento Informado en PDF para poder enviar la prÃ¡ctica a revisiÃ³n docente (RN02).
+                Es obligatorio subir el documento de Consentimiento Informado en PDF para poder enviar la práctica a revisión docente (RN02).
               </strong>
             )}
           </p>
         </div>
       ) : (
         <div className="documentos-tabla-responsive">
-          <table className="tabla-documentos" aria-label="Lista de documentos asociados a la prÃ¡ctica">
+          <table className="tabla-documentos" aria-label="Lista de documentos asociados a la práctica">
             <thead>
               <tr>
                 <th scope="col">Tipo de Documento</th>
                 <th scope="col">Nombre Original</th>
-                <th scope="col">TamaÃ±o</th>
+                <th scope="col">Tamaño</th>
                 <th scope="col">Fecha de Carga</th>
-                <th scope="col">AcciÃ³n</th>
+                <th scope="col">Acción</th>
               </tr>
             </thead>
             <tbody>

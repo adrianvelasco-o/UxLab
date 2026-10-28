@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 /**
- * Modal accesible de confirmaciÃ³n para envÃ­o a revisiÃ³n docente.
- * Cumple WCAG 2.1.1, 2.1.2, 2.4.3, 2.4.7 y 4.1.2 con Focus Trap cÃ­clico estricto.
+ * Modal accesible de confirmación para envío a revisión docente.
+ * Cumple WCAG 2.1.1, 2.1.2, 2.4.3, 2.4.7 y 4.1.2 con Focus Trap cíclico estricto.
  */
 export function ModalConfirmarRevision({
   abierto,
@@ -19,11 +19,11 @@ export function ModalConfirmarRevision({
   useEffect(() => {
     if (!abierto) return;
 
-    // 1. Prevenir scroll del fondo mientras el modal estÃ¡ activo
+    // 1. Prevenir scroll del fondo mientras el modal está activo
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    // 2. Foco inicial al botÃ³n de cancelaciÃ³n
+    // 2. Foco inicial al botón de cancelación
     const timer = setTimeout(() => {
       cancelarBtnRef.current?.focus();
     }, 50);
@@ -54,13 +54,13 @@ export function ModalConfirmarRevision({
         const ultimoElemento = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey) {
-          // Shift + Tab: si estÃ¡ en el primero, cicla al Ãºltimo
+          // Shift + Tab: si está en el primero, cicla al último
           if (document.activeElement === primerElemento) {
             e.preventDefault();
             ultimoElemento.focus();
           }
         } else {
-          // Tab: si estÃ¡ en el Ãºltimo, cicla al primero
+          // Tab: si está en el último, cicla al primero
           if (document.activeElement === ultimoElemento) {
             e.preventDefault();
             primerElemento.focus();
@@ -101,7 +101,7 @@ export function ModalConfirmarRevision({
       >
         <div className="modal-header">
           <h2 id="titulo-modal-revision" className="modal-titulo">
-            {esRechazada ? 'Confirmar ReenvÃ­o a RevisiÃ³n Docente' : 'Confirmar EnvÃ­o a RevisiÃ³n Docente'}
+            {esRechazada ? 'Confirmar Reenvío a Revisión Docente' : 'Confirmar Envío a Revisión Docente'}
           </h2>
           <button
             type="button"
@@ -113,7 +113,7 @@ export function ModalConfirmarRevision({
               }
             }}
             disabled={enviando}
-            aria-label="Cerrar modal de confirmaciÃ³n"
+            aria-label="Cerrar modal de confirmación"
           >
             &times;
           </button>
@@ -122,8 +122,8 @@ export function ModalConfirmarRevision({
         <div className="modal-cuerpo">
           <p id="desc-modal-revision">
             {esRechazada
-              ? 'Â¿EstÃ¡ seguro de reenviar esta prÃ¡ctica a revisiÃ³n docente? Todas las observaciones previas han sido marcadas como resueltas. El docente tutor recibirÃ¡ una notificaciÃ³n para dictaminar nuevamente la prÃ¡ctica.'
-              : 'Â¿EstÃ¡ seguro de enviar esta prÃ¡ctica a revisiÃ³n docente? Una vez enviada, la prÃ¡ctica pasarÃ¡ al estado "En RevisiÃ³n" y no podrÃ¡ modificarse hasta que el docente tutor emita su dictamen metodolÃ³gico.'}
+              ? '¿Está seguro de reenviar esta práctica a revisión docente? Todas las observaciones previas han sido marcadas como resueltas. El docente tutor recibirá una notificación para dictaminar nuevamente la práctica.'
+              : '¿Está seguro de enviar esta práctica a revisión docente? Una vez enviada, la práctica pasará al estado "En Revisión" y no podrá modificarse hasta que el docente tutor emita su dictamen metodológico.'}
           </p>
 
           {error && (

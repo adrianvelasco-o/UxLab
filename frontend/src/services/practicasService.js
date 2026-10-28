@@ -1,4 +1,4 @@
-﻿import { clienteApi } from './api.js';
+import { clienteApi } from './api.js';
 
 /**
  * Servicio para gestión de Prácticas de Usabilidad e Instrumentos de Evaluación (PB3 / SB4 / PB4-A).
@@ -137,7 +137,7 @@ export const practicasService = {
    * Obtiene el listado de docentes activos para asignar como tutor a la práctica.
    */
   /**
-   * Emite el dictamen formal de revisiÃ³n docente para una prÃ¡ctica (APROBADA o RECHAZADA) (PB4-B).
+   * Emite el dictamen formal de revisión docente para una práctica (APROBADA o RECHAZADA) (PB4-B).
    * @param {number} practicaId
    * @param {object} datos
    * @param {'APROBADA'|'RECHAZADA'} datos.resultado
