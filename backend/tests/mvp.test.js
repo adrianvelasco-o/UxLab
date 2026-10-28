@@ -1211,6 +1211,93 @@ describe('API Ux', () => {
       });
 
       // -----------------------------------------------------------------
+      // INSTRUMENTOS: GET /api/practicas/:id/instrumentos (PB5-01)
+      // -----------------------------------------------------------------
+      describe('Consulta de Instrumentos de Evaluación (GET /api/practicas/:id/instrumentos - PB5-01)', () => {
+        const instrumentosSimulados = [
+          {
+            id: 1,
+            practicaId: 101,
+            tipo: 'GUIA_OBSERVACION',
+            nombre: 'Guía de Observación - Flujo de Compra',
+            instrucciones: 'Anotar comportamientos del usuario al pagar',
+            contenido: {
+              metricas: ['tiempo_total', 'errores'],
+              preguntas: ['¿La interfaz fue clara?']
+            }
+          }
+        ];
+
+        test('GET /api/practicas/:id/instrumentos debe permitir al estudiante propietario consultar sus instrumentos con contenido', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId,
+            docenteId,
+            estado: 'BORRADOR'
+          });
+          jest.spyOn(prisma.instrumento, 'findMany').mockResolvedValue(instrumentosSimulados);
+
+          const res = await request(app)
+            .get('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(Array.isArray(res.body.datos)).toBe(true);
+          expect(res.body.datos[0]).toHaveProperty('contenido');
+          expect(res.body.datos[0].contenido).toEqual(instrumentosSimulados[0].contenido);
+        });
+
+        test('GET /api/practicas/:id/instrumentos debe permitir al docente autorizado consultar instrumentos de una práctica', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId,
+            docenteId,
+            estado: 'EN_REVISION'
+          });
+          jest.spyOn(prisma.instrumento, 'findMany').mockResolvedValue(instrumentosSimulados);
+
+          const res = await request(app)
+            .get('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${docenteToken}`);
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.datos[0].tipo).toBe('GUIA_OBSERVACION');
+          expect(res.body.datos[0]).toHaveProperty('contenido');
+        });
+
+        test('GET /api/practicas/:id/instrumentos debe rechazar con 403 si el usuario no está autorizado', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId,
+            docenteId,
+            estado: 'EN_REVISION'
+          });
+
+          const res = await request(app)
+            .get('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${otroEstudianteToken}`);
+
+          expect(res.statusCode).toBe(403);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('No tienes permisos');
+        });
+
+        test('GET /api/practicas/:id/instrumentos debe retornar 404 si la práctica no existe', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue(null);
+
+          const res = await request(app)
+            .get('/api/practicas/999/instrumentos')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(404);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no existe');
+        });
+      });
+
+      // -----------------------------------------------------------------
       // DOCUMENTOS PDF: POST /api/documentos
       // -----------------------------------------------------------------
       describe('Carga de Documentos PDF (POST /api/documentos)', () => {

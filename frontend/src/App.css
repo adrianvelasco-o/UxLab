@@ -1417,6 +1417,8 @@ body {
   gap: 0.65rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .instrumento-card-item:hover {
@@ -2281,4 +2283,183 @@ body {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* ========================================================================= */
+/* PB5-01: INSPECCIÓN DOCENTE DE INSTRUMENTOS CARGADOS                       */
+/* ========================================================================= */
+.detalle-instrumentos-card {
+  background: var(--white);
+  border: 1px solid #e1e7ec;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  min-width: 0;
+}
+
+.instrumentos-grid-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 1.15rem;
+  min-width: 0;
+}
+
+.instrumento-tipo-badge {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+
+.btn-icono-eliminar {
+  background: none;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.btn-icono-eliminar:focus-visible {
+  outline: 3px solid #dc2626;
+  outline-offset: 2px;
+}
+
+.instrumento-detalle-contenido {
+  margin-top: 0.35rem;
+  min-width: 0;
+}
+
+.instrumento-detalle-contenido > summary {
+  cursor: pointer;
+  list-style-position: outside;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f766e;
+  overflow-wrap: anywhere;
+}
+
+.instrumento-detalle-contenido > summary:hover {
+  background: #f0fdfa;
+}
+
+.instrumento-detalle-contenido > summary:focus-visible {
+  outline: 3px solid #0f766e;
+  outline-offset: 2px;
+}
+
+.instrumento-contenido-cuerpo {
+  margin-top: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.instrumento-contenido-encabezado {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.instrumento-contenido-lista {
+  margin: 0.25rem 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.instrumento-contenido-lista-definicion {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.instrumento-contenido-entrada dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.25rem;
+}
+
+.instrumento-contenido-entrada dd {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.instrumento-contenido-texto,
+.instrumento-contenido-vacio {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.instrumento-contenido-fallback,
+.fuente-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+  margin: 0;
+}
+
+.form-nuevo-instrumento-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.sin-instrumentos-box {
+  text-align: left;
+  padding: 1.25rem 1rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .detalle-instrumentos-card {
+    padding: 1rem;
+  }
+
+  .instrumentos-grid-lista {
+    grid-template-columns: 1fr;
+  }
+
+  .instrumento-card-header {
+    flex-wrap: wrap;
+  }
 }

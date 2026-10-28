@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ModalConfirmarEliminar } from './ModalConfirmarEliminar.jsx';
+import { DetalleInstrumento } from './DetalleInstrumento.jsx';
 
 const TIPOS_INSTRUMENTO = [
   { valor: 'GUIA_OBSERVACION', etiqueta: 'Guía de Observación' },
@@ -210,33 +211,12 @@ export function SeccionInstrumentos({
       ) : (
         <div className="instrumentos-grid-lista" role="list">
           {instrumentos.map((inst) => (
-            <article
+            <DetalleInstrumento
               key={inst.id}
-              className="instrumento-card-item"
-              role="listitem"
-              aria-labelledby={`inst-titulo-${inst.id}`}
-            >
-              <div className="instrumento-card-header">
-                <span className="instrumento-tipo-badge">{inst.tipo}</span>
-                {esEditable && (
-                  <button
-                    type="button"
-                    className="btn-icono-eliminar"
-                    onClick={(e) => handleAbrirEliminar(inst, e)}
-                    aria-label={`Eliminar instrumento ${inst.nombre}`}
-                    title="Eliminar instrumento"
-                  >
-                    &times;
-                  </button>
-                )}
-              </div>
-              <h3 id={`inst-titulo-${inst.id}`} className="instrumento-card-titulo">
-                {inst.nombre}
-              </h3>
-              {inst.instrucciones && (
-                <p className="instrumento-card-instrucciones">{inst.instrucciones}</p>
-              )}
-            </article>
+              instrumento={inst}
+              esEditable={esEditable}
+              onSolicitarEliminar={handleAbrirEliminar}
+            />
           ))}
         </div>
       )}
