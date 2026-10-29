@@ -8,6 +8,7 @@ import {
   loginEsquema,
   registroEsquema
 } from '../src/modules/auth/auth.schema.js';
+import * as practicasService from '../src/modules/practicas/practicas.service.js';
 import {
   crearPracticaEsquema,
   crearInstrumentoEsquema,
@@ -209,6 +210,32 @@ describe('API Ux', () => {
       };
       const resultado = revisionDocenteEsquema.safeParse(revisionValida);
       expect(resultado.success).toBe(true);
+    });
+
+    test('revisionDocenteEsquema debe exigir al menos una observación obligatoria si resultado es RECHAZADA (PB7)', () => {
+      const aprobadaSinObs = { resultado: 'APROBADA' };
+      expect(revisionDocenteEsquema.safeParse(aprobadaSinObs).success).toBe(true);
+
+      const aprobadaConObsVacias = { resultado: 'APROBADA', observaciones: [] };
+      expect(revisionDocenteEsquema.safeParse(aprobadaConObsVacias).success).toBe(true);
+
+      const rechazadaConObsValida = {
+        resultado: 'RECHAZADA',
+        observaciones: [{ seccion: 'Instrumentos', detalle: 'Corregir escala de evaluación' }]
+      };
+      expect(revisionDocenteEsquema.safeParse(rechazadaConObsValida).success).toBe(true);
+
+      const rechazadaSinObs = { resultado: 'RECHAZADA' };
+      expect(revisionDocenteEsquema.safeParse(rechazadaSinObs).success).toBe(false);
+
+      const rechazadaConObsVacias = { resultado: 'RECHAZADA', observaciones: [] };
+      expect(revisionDocenteEsquema.safeParse(rechazadaConObsVacias).success).toBe(false);
+
+      const rechazadaConDetalleInvalido = {
+        resultado: 'RECHAZADA',
+        observaciones: [{ seccion: 'Instrumentos', detalle: 'abc' }]
+      };
+      expect(revisionDocenteEsquema.safeParse(rechazadaConDetalleInvalido).success).toBe(false);
     });
 
     test('finalizarPracticaEsquema debe validar estados FINALIZADA y CERRADA', () => {
@@ -1176,12 +1203,87 @@ describe('API Ux', () => {
           expect(res.body.exito).toBe(false);
         });
 
+        test('POST /api/practicas/:id/instrumentos debe permitir al estudiante registrar un instrumento en estado RECHAZADA para subsanación (PB8)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'RECHAZADA'
+          });
+
+          const createSpy = jest.spyOn(prisma.instrumento, 'create').mockClear().mockResolvedValue({
+            id: 2,
+            practicaId: 101,
+            tipo: 'CUESTIONARIO_POST_TEST',
+            nombre: 'Cuestionario Post-Test Corregido'
+          });
+
+          const res = await request(app)
+            .post('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              tipo: 'CUESTIONARIO_POST_TEST',
+              nombre: 'Cuestionario Post-Test Corregido'
+            });
+
+          expect(res.statusCode).toBe(201);
+          expect(res.body.exito).toBe(true);
+          expect(createSpy).toHaveBeenCalled();
+        });
+
+        test('POST /api/practicas/:id/instrumentos debe rechazar con 400 y no crear si la práctica está en estado EN_REVISION (PB8)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'EN_REVISION'
+          });
+
+          const createSpy = jest.spyOn(prisma.instrumento, 'create').mockClear();
+
+          const res = await request(app)
+            .post('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              tipo: 'BANCO_TAREAS',
+              nombre: 'Banco de Tareas no permitido'
+            });
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('BORRADOR o RECHAZADA');
+          expect(createSpy).not.toHaveBeenCalled();
+        });
+
+        test('POST /api/practicas/:id/instrumentos debe rechazar con 400 y no crear si la práctica está en estado APROBADA (PB8)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'APROBADA'
+          });
+
+          const createSpy = jest.spyOn(prisma.instrumento, 'create').mockClear();
+
+          const res = await request(app)
+            .post('/api/practicas/101/instrumentos')
+            .set('Authorization', `Bearer ${estudianteToken}`)
+            .send({
+              tipo: 'BANCO_TAREAS',
+              nombre: 'Banco de Tareas no permitido'
+            });
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('BORRADOR o RECHAZADA');
+          expect(createSpy).not.toHaveBeenCalled();
+        });
+
         test('POST /api/practicas/:id/instrumentos debe rechazar con 400 si la práctica se encuentra CERRADA (RN06)', async () => {
           jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
             id: 101,
             estudianteId: estudianteId,
             estado: 'CERRADA'
           });
+
+          const createSpy = jest.spyOn(prisma.instrumento, 'create').mockClear();
 
           const res = await request(app)
             .post('/api/practicas/101/instrumentos')
@@ -1194,6 +1296,7 @@ describe('API Ux', () => {
           expect(res.statusCode).toBe(400);
           expect(res.body.exito).toBe(false);
           expect(res.body.mensaje).toContain('CERRADA');
+          expect(createSpy).not.toHaveBeenCalled();
         });
 
         test('POST /api/practicas/:id/instrumentos debe rechazar con 400 si el tipo de instrumento es inválido', async () => {
@@ -1207,6 +1310,158 @@ describe('API Ux', () => {
 
           expect(res.statusCode).toBe(400);
           expect(res.body.exito).toBe(false);
+        });
+      });
+
+      // -----------------------------------------------------------------
+      // INSTRUMENTOS: DELETE /api/practicas/:id/instrumentos/:instrumentoId (PB8)
+      // -----------------------------------------------------------------
+      describe('Eliminación de Instrumentos de Evaluación (DELETE /api/practicas/:id/instrumentos/:instrumentoId - PB8)', () => {
+        test('DELETE /api/practicas/:id/instrumentos/:instrumentoId debe permitir al estudiante eliminar un instrumento en estado BORRADOR', async () => {
+          jest.spyOn(prisma.instrumento, 'findUnique').mockResolvedValue({
+            id: 10,
+            practicaId: 101,
+            nombre: 'Guía inicial'
+          });
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'BORRADOR'
+          });
+          const deleteSpy = jest.spyOn(prisma.instrumento, 'delete').mockClear().mockResolvedValue({ id: 10 });
+
+          const res = await request(app)
+            .delete('/api/practicas/101/instrumentos/10')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(res.body.mensaje).toContain('eliminado correctamente');
+          expect(deleteSpy).toHaveBeenCalledWith({ where: { id: 10 } });
+        });
+
+        test('DELETE /api/practicas/:id/instrumentos/:instrumentoId debe permitir al estudiante eliminar un instrumento en estado RECHAZADA para subsanación', async () => {
+          jest.spyOn(prisma.instrumento, 'findUnique').mockResolvedValue({
+            id: 11,
+            practicaId: 101,
+            nombre: 'Instrumento a corregir'
+          });
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'RECHAZADA'
+          });
+          const deleteSpy = jest.spyOn(prisma.instrumento, 'delete').mockClear().mockResolvedValue({ id: 11 });
+
+          const res = await request(app)
+            .delete('/api/practicas/101/instrumentos/11')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(200);
+          expect(res.body.exito).toBe(true);
+          expect(deleteSpy).toHaveBeenCalledWith({ where: { id: 11 } });
+        });
+
+        test('DELETE /api/practicas/:id/instrumentos/:instrumentoId debe rechazar con 400 y no eliminar si la práctica está en estado EN_REVISION (PB8)', async () => {
+          jest.spyOn(prisma.instrumento, 'findUnique').mockResolvedValue({
+            id: 12,
+            practicaId: 101,
+            nombre: 'Instrumento bloqueado'
+          });
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'EN_REVISION'
+          });
+          const deleteSpy = jest.spyOn(prisma.instrumento, 'delete').mockClear();
+
+          const res = await request(app)
+            .delete('/api/practicas/101/instrumentos/12')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('BORRADOR o RECHAZADA');
+          expect(deleteSpy).not.toHaveBeenCalled();
+        });
+
+        test('DELETE /api/practicas/:id/instrumentos/:instrumentoId debe rechazar con 400 y no eliminar si la práctica está en estado APROBADA (PB8)', async () => {
+          jest.spyOn(prisma.instrumento, 'findUnique').mockResolvedValue({
+            id: 13,
+            practicaId: 101,
+            nombre: 'Instrumento aprobado inmutable'
+          });
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'APROBADA'
+          });
+          const deleteSpy = jest.spyOn(prisma.instrumento, 'delete').mockClear();
+
+          const res = await request(app)
+            .delete('/api/practicas/101/instrumentos/13')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('BORRADOR o RECHAZADA');
+          expect(deleteSpy).not.toHaveBeenCalled();
+        });
+
+        test('DELETE /api/practicas/:id/instrumentos/:instrumentoId debe rechazar con 400 y no eliminar si la práctica se encuentra CERRADA (RN06)', async () => {
+          jest.spyOn(prisma.instrumento, 'findUnique').mockResolvedValue({
+            id: 14,
+            practicaId: 101,
+            nombre: 'Instrumento cerrado'
+          });
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'CERRADA'
+          });
+          const deleteSpy = jest.spyOn(prisma.instrumento, 'delete').mockClear();
+
+          const res = await request(app)
+            .delete('/api/practicas/101/instrumentos/14')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('CERRADA');
+          expect(deleteSpy).not.toHaveBeenCalled();
+        });
+
+        test('DELETE /api/practicas/:id/instrumentos/:instrumentoId debe rechazar con 403 si un estudiante no es propietario', async () => {
+          jest.spyOn(prisma.instrumento, 'findUnique').mockResolvedValue({
+            id: 15,
+            practicaId: 101,
+            nombre: 'Instrumento ajeno'
+          });
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            estudianteId: estudianteId,
+            estado: 'BORRADOR'
+          });
+
+          const res = await request(app)
+            .delete('/api/practicas/101/instrumentos/15')
+            .set('Authorization', `Bearer ${otroEstudianteToken}`);
+
+          expect(res.statusCode).toBe(403);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('No tienes permisos');
+        });
+
+        test('DELETE /api/practicas/:id/instrumentos/:instrumentoId debe retornar 404 si el instrumento no existe', async () => {
+          jest.spyOn(prisma.instrumento, 'findUnique').mockResolvedValue(null);
+
+          const res = await request(app)
+            .delete('/api/practicas/101/instrumentos/999')
+            .set('Authorization', `Bearer ${estudianteToken}`);
+
+          expect(res.statusCode).toBe(404);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('no existe');
         });
       });
 
@@ -2023,45 +2278,67 @@ describe('API Ux', () => {
           expect(res.body.exito).toBe(false);
         });
 
-        // Caso 8: Rechazo sin observaciones (Backend actual lo permite con array vacÃ­o y retorna 201)
-        test('Caso 8: POST /api/practicas/:id/revisiones permite RECHAZADA sin observaciones explÃ­citas (201)', async () => {
-          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
-            id: 101,
-            titulo: 'PrÃ¡ctica UX Piloto',
-            estudianteId: estudianteId,
-            docenteId: docenteId,
-            estado: 'EN_REVISION'
-          });
-
-          jest.spyOn(prisma, '$transaction').mockImplementation(async (callback) => {
-            return callback({
-              revision: {
-                create: jest.fn().mockResolvedValue({
-                  id: 53,
-                  practicaId: 101,
-                  docenteId: docenteId,
-                  resultado: 'RECHAZADA',
-                  comentariosGenerales: 'Rechazo con comentarios generales sin lista de observaciones detallada',
-                  observaciones: []
-                })
-              },
-              practica: {
-                update: jest.fn().mockResolvedValue({ id: 101, estado: 'RECHAZADA' })
-              }
+        // Caso 8: Rechazo sin observaciones (PB7) debe rechazar con 400
+        test('Caso 8: POST /api/practicas/:id/revisiones debe rechazar con 400 si RECHAZADA no incluye observaciones (PB7)', async () => {
+          const resSinObs = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${docenteToken}`)
+            .send({
+              resultado: 'RECHAZADA',
+              comentariosGenerales: 'Se rechaza por inconsistencias metodológicas globales.'
             });
-          });
 
+          expect(resSinObs.statusCode).toBe(400);
+          expect(resSinObs.body.exito).toBe(false);
+          expect(resSinObs.body.mensaje).toContain('inválidos');
+
+          const resObsVacias = await request(app)
+            .post('/api/practicas/101/revisiones')
+            .set('Authorization', `Bearer ${docenteToken}`)
+            .send({
+              resultado: 'RECHAZADA',
+              observaciones: []
+            });
+
+          expect(resObsVacias.statusCode).toBe(400);
+          expect(resObsVacias.body.exito).toBe(false);
+          expect(resObsVacias.body.mensaje).toContain('inválidos');
+        });
+
+        // Caso 9: RECHAZADA con observación con detalle inválido (< 5 caracteres) -> 400
+        test('Caso 9: POST /api/practicas/:id/revisiones debe rechazar con 400 si RECHAZADA contiene observaciones con detalle inválido (PB7)', async () => {
           const res = await request(app)
             .post('/api/practicas/101/revisiones')
             .set('Authorization', `Bearer ${docenteToken}`)
             .send({
               resultado: 'RECHAZADA',
-              comentariosGenerales: 'Se rechaza por inconsistencias metodolÃ³gicas globales.'
+              observaciones: [
+                { seccion: 'Instrumentos', detalle: 'abc' }
+              ]
             });
 
-          expect(res.statusCode).toBe(201);
-          expect(res.body.exito).toBe(true);
-          expect(res.body.datos.resultado).toBe('RECHAZADA');
+          expect(res.statusCode).toBe(400);
+          expect(res.body.exito).toBe(false);
+          expect(res.body.mensaje).toContain('inválidos');
+        });
+
+        // Caso 10: Salvaguarda en el service para defensa en profundidad
+        test('Caso 10: registrarRevisionDocente en service debe lanzar AppError 400 ante RECHAZADA sin observaciones (defensa en profundidad)', async () => {
+          jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+            id: 101,
+            titulo: 'Práctica UX Piloto',
+            estudianteId: estudianteId,
+            docenteId: docenteId,
+            estado: 'EN_REVISION'
+          });
+
+          await expect(
+            practicasService.registrarRevisionDocente(
+              101,
+              { resultado: 'RECHAZADA', observaciones: [] },
+              { id: docenteId, rolNombre: 'DOCENTE' }
+            )
+          ).rejects.toThrow('Una práctica rechazada debe incluir al menos una observación que permita su corrección');
         });
       });
 

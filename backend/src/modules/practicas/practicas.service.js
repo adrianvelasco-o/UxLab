@@ -147,6 +147,24 @@ export async function obtenerPracticaDetalle(practicaId, usuario) {
 // INSTRUMENTOS
 // -------------------------------------------------------------
 
+function validarPracticaModificableParaInstrumentos(practica) {
+  if (practica.estado === 'CERRADA') {
+    throw new AppError(
+      'La práctica se encuentra formalmente CERRADA y no admite modificaciones (RN06)',
+      400,
+      CODIGOS_ERROR.PRACTICA_NO_EDITABLE
+    );
+  }
+
+  if (!['BORRADOR', 'RECHAZADA'].includes(practica.estado)) {
+    throw new AppError(
+      `Solo se pueden agregar o eliminar instrumentos en prácticas en estado BORRADOR o RECHAZADA (estado actual: ${practica.estado})`,
+      400,
+      CODIGOS_ERROR.PRACTICA_NO_EDITABLE
+    );
+  }
+}
+
 export async function agregarInstrumento(practicaId, datos, usuario) {
   const practica = await practicasRepository.buscarPracticaPorId(practicaId);
   if (!practica) {
@@ -158,9 +176,7 @@ export async function agregarInstrumento(practicaId, datos, usuario) {
     throw new AppError('No tienes permisos para agregar instrumentos a esta práctica', 403, CODIGOS_ERROR.ACCESO_DENEGADO);
   }
 
-  if (practica.estado === 'CERRADA') {
-    throw new AppError('La práctica se encuentra formalmente CERRADA y no admite modificaciones (RN06)', 400, CODIGOS_ERROR.PRACTICA_NO_EDITABLE);
-  }
+  validarPracticaModificableParaInstrumentos(practica);
 
   return practicasRepository.crearInstrumento({
     practicaId,
@@ -183,14 +199,16 @@ export async function eliminarInstrumento(practicaId, instrumentoId, usuario) {
   }
 
   const practica = await practicasRepository.buscarPracticaPorId(practicaId);
+  if (!practica) {
+    throw new AppError('La práctica especificada no existe', 404, CODIGOS_ERROR.RECURSO_NO_ENCONTRADO);
+  }
+
   const esDuenio = practica.estudianteId === usuario.id || ['ADMINISTRADOR'].includes(usuario.rolNombre);
   if (!esDuenio) {
     throw new AppError('No tienes permisos para eliminar este instrumento', 403, CODIGOS_ERROR.ACCESO_DENEGADO);
   }
 
-  if (practica.estado === 'CERRADA') {
-    throw new AppError('La práctica se encuentra formalmente CERRADA y no admite modificaciones (RN06)', 400, CODIGOS_ERROR.PRACTICA_NO_EDITABLE);
-  }
+  validarPracticaModificableParaInstrumentos(practica);
 
   return practicasRepository.eliminarInstrumento(instrumentoId);
 }
@@ -211,6 +229,17 @@ export async function registrarRevisionDocente(practicaId, datos, usuario) {
 
   if (usuario.rolNombre === 'DOCENTE' && practica.docenteId !== usuario.id) {
     throw new AppError('Solo el docente tutor asignado a la práctica puede revisarla', 403, CODIGOS_ERROR.DOCENTE_NO_ASIGNADO);
+  }
+
+  // Salvaguarda en el service para defensa en profundidad (PB7)
+  if (datos.resultado === 'RECHAZADA') {
+    if (!datos.observaciones || !Array.isArray(datos.observaciones) || datos.observaciones.length === 0) {
+      throw new AppError(
+        'Una práctica rechazada debe incluir al menos una observación que permita su corrección',
+        400,
+        CODIGOS_ERROR.DATOS_INVALIDOS
+      );
+    }
   }
 
   const revision = await practicasRepository.crearRevisionConObservaciones({

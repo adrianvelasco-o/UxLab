@@ -44,11 +44,18 @@ export function PanelEstudiante() {
             </div>
           </div>
 
-          <div className="module-card">
+          <div className="module-card module-card-action">
             <div className="module-icon-wrap" aria-hidden="true">📅</div>
             <div className="module-info">
               <h3>Reservas de Espacios</h3>
               <p>Agendamiento de estaciones de prueba y cámara Gesell tras aprobación docente.</p>
+              <button
+                type="button"
+                onClick={() => navegar(RUTAS.ESTUDIANTE_RESERVAS, 'Disponibilidad de Laboratorios')}
+                className="btn-modulo-admin"
+              >
+                Consultar Disponibilidad →
+              </button>
             </div>
           </div>
         </div>

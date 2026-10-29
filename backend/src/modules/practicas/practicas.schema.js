@@ -45,18 +45,32 @@ export const crearInstrumentoEsquema = z.object({
   contenido: z.any().optional().nullable()
 });
 
-export const revisionDocenteEsquema = z.object({
-  resultado: z.enum(['APROBADA', 'RECHAZADA'], {
-    errorMap: () => ({ message: 'El resultado debe ser APROBADA o RECHAZADA' })
-  }),
-  comentariosGenerales: z.string().optional().nullable(),
-  observaciones: z.array(
-    z.object({
-      seccion: z.string().min(2, 'La sección es obligatoria'),
-      detalle: z.string().min(5, 'El detalle de la observación debe tener al menos 5 caracteres')
-    })
-  ).optional()
-});
+export const revisionDocenteEsquema = z
+  .object({
+    resultado: z.enum(['APROBADA', 'RECHAZADA'], {
+      errorMap: () => ({ message: 'El resultado debe ser APROBADA o RECHAZADA' })
+    }),
+    comentariosGenerales: z.string().optional().nullable(),
+    observaciones: z
+      .array(
+        z.object({
+          seccion: z.string().min(2, 'La sección es obligatoria'),
+          detalle: z.string().min(5, 'El detalle de la observación debe tener al menos 5 caracteres')
+        })
+      )
+      .optional()
+  })
+  .superRefine((data, ctx) => {
+    if (data.resultado === 'RECHAZADA') {
+      if (!data.observaciones || data.observaciones.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['observaciones'],
+          message: 'Debe incluir al menos una observación para justificar el rechazo de la práctica'
+        });
+      }
+    }
+  });
 
 export const finalizarPracticaEsquema = z.object({
   estado: z.enum(['FINALIZADA', 'CERRADA'], {

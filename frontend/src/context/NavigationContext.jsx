@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const NavigationContext = createContext(null);
 
@@ -10,7 +10,8 @@ export const RUTAS = {
   DOCENTE_PRACTICA_DETALLE: '/docente/practica',
   ESTUDIANTE: '/estudiante',
   ESTUDIANTE_PRACTICAS: '/estudiante/practicas',
-  ESTUDIANTE_PRACTICA_DETALLE: '/estudiante/practica'
+  ESTUDIANTE_PRACTICA_DETALLE: '/estudiante/practica',
+  ESTUDIANTE_RESERVAS: '/estudiante/reservas'
 };
 
 

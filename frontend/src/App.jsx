@@ -11,6 +11,7 @@ import { DetallePracticaDocente } from './pages/DetallePracticaDocente.jsx';
 import { PanelEstudiante } from './pages/PanelEstudiante.jsx';
 import { PracticasEstudiante } from './pages/PracticasEstudiante.jsx';
 import { DetallePractica } from './pages/DetallePractica.jsx';
+import { DisponibilidadLaboratorio } from './pages/DisponibilidadLaboratorio.jsx';
 import './App.css';
 
 function EnrutadorPrincipal() {
@@ -76,6 +77,15 @@ function EnrutadorPrincipal() {
     return (
       <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
         <PanelEstudiante />
+      </RutaProtegida>
+    );
+  }
+
+  // 7. Ruta: Consulta de Disponibilidad de Laboratorios UX (/estudiante/reservas)
+  if (ruta === RUTAS.ESTUDIANTE_RESERVAS) {
+    return (
+      <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
+        <DisponibilidadLaboratorio />
       </RutaProtegida>
     );
   }
