@@ -11,7 +11,8 @@ export const RUTAS = {
   ESTUDIANTE: '/estudiante',
   ESTUDIANTE_PRACTICAS: '/estudiante/practicas',
   ESTUDIANTE_PRACTICA_DETALLE: '/estudiante/practica',
-  ESTUDIANTE_RESERVAS: '/estudiante/reservas'
+  ESTUDIANTE_RESERVAS: '/estudiante/reservas',
+  ESTUDIANTE_RESERVA_SOLICITAR: '/estudiante/reservas/solicitar'
 };
 
 

@@ -2344,4 +2344,240 @@ describe('API Ux', () => {
 
     });
   });
+
+  // -----------------------------------------------------------------
+  // SOLICITUD DE RESERVA DE ESPACIO (POST /api/reservas - PB10 / PB10-01)
+  // -----------------------------------------------------------------
+  describe('Solicitud de Reserva de Espacio - Integración HTTP (POST /api/reservas - PB10)', () => {
+    const estudianteReservaId = 50;
+    const estudianteReservaToken = generarTokenJwt({ usuarioId: estudianteReservaId });
+    const otroEstudianteReservaId = 51;
+    const otroEstudianteReservaToken = generarTokenJwt({ usuarioId: otroEstudianteReservaId });
+
+    const fechaValidaFutura = '2026-11-16'; // Lunes 16 de Noviembre de 2026 (UTC)
+
+    const laboratorioMock = {
+      id: 1,
+      nombre: 'UX Lab Principal',
+      ubicacion: 'Edificio B, Aula 201',
+      capacidad: 1,
+      activo: true,
+      horarios: []
+    };
+
+    const horarioMock = {
+      id: 3,
+      laboratorioId: 1,
+      diaSemana: 'LUNES',
+      activo: true
+    };
+
+    const practicaAprobadaMock = {
+      id: 12,
+      titulo: 'Práctica UX Aprobada y Completa',
+      estudianteId: estudianteReservaId,
+      estado: 'APROBADA',
+      documentos: [
+        { id: 101, tipo: 'CONSENTIMIENTO_INFORMADO', nombreOriginal: 'consentimiento.pdf' },
+        { id: 102, tipo: 'PROTOCOLO_PRUEBA', nombreOriginal: 'protocolo.pdf' }
+      ]
+    };
+
+    beforeEach(() => {
+      jest.spyOn(prisma.usuario, 'findUnique').mockImplementation(({ where }) => {
+        if (where.id === estudianteReservaId) {
+          return Promise.resolve({
+            id: estudianteReservaId,
+            nombres: 'Carlos',
+            apellidos: 'Estudiante',
+            correoInstitucional: 'carlos.estudiante@unicolmayor.edu.co',
+            activo: true,
+            rolId: 3,
+            rol: { nombre: 'ESTUDIANTE' }
+          });
+        }
+        if (where.id === otroEstudianteReservaId) {
+          return Promise.resolve({
+            id: otroEstudianteReservaId,
+            nombres: 'Ana',
+            apellidos: 'OtraEstudiante',
+            correoInstitucional: 'ana.estudiante@unicolmayor.edu.co',
+            activo: true,
+            rolId: 3,
+            rol: { nombre: 'ESTUDIANTE' }
+          });
+        }
+        return Promise.resolve(null);
+      });
+
+      jest.spyOn(prisma.usuario, 'findMany').mockResolvedValue([]);
+      jest.spyOn(prisma.notificacion, 'create').mockResolvedValue({ id: 1, creadoEn: new Date() });
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    // Caso 1: Éxito (HTTP 201 y estado PENDIENTE)
+    test('Caso 1: POST /api/reservas debe crear la reserva en estado PENDIENTE con datos válidos (HTTP 201)', async () => {
+      jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue(practicaAprobadaMock);
+      jest.spyOn(prisma.laboratorio, 'findUnique').mockResolvedValue(laboratorioMock);
+      jest.spyOn(prisma.horario, 'findUnique').mockResolvedValue(horarioMock);
+
+      jest.spyOn(prisma, '$transaction').mockImplementation(async (callback) => {
+        return callback({
+          $queryRaw: jest.fn().mockResolvedValue([{ id: 3 }]),
+          reserva: {
+            count: jest.fn().mockResolvedValue(0),
+            create: jest.fn().mockResolvedValue({
+              id: 201,
+              practicaId: 12,
+              laboratorioId: 1,
+              horarioId: 3,
+              solicitanteId: estudianteReservaId,
+              fechaReserva: new Date(fechaValidaFutura),
+              estado: 'PENDIENTE',
+              practica: practicaAprobadaMock,
+              laboratorio: laboratorioMock,
+              horario: horarioMock,
+              solicitante: {
+                id: estudianteReservaId,
+                nombres: 'Carlos',
+                apellidos: 'Estudiante',
+                correoInstitucional: 'carlos.estudiante@unicolmayor.edu.co'
+              }
+            })
+          }
+        });
+      });
+
+      const res = await request(app)
+        .post('/api/reservas')
+        .set('Authorization', `Bearer ${estudianteReservaToken}`)
+        .send({
+          practicaId: 12,
+          laboratorioId: 1,
+          horarioId: 3,
+          fechaReserva: fechaValidaFutura
+        });
+
+      expect(res.statusCode).toBe(201);
+      expect(res.body.exito).toBe(true);
+      expect(res.body.datos).toHaveProperty('id', 201);
+      expect(res.body.datos).toHaveProperty('estado', 'PENDIENTE');
+    });
+
+    // Caso 2: Práctica no aprobada (HTTP 400 y TRANSICION_ESTADO_INVALIDA)
+    test('Caso 2: POST /api/reservas debe rechazar con 400 si la práctica no está APROBADA', async () => {
+      jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+        ...practicaAprobadaMock,
+        estado: 'EN_REVISION'
+      });
+
+      const res = await request(app)
+        .post('/api/reservas')
+        .set('Authorization', `Bearer ${estudianteReservaToken}`)
+        .send({
+          practicaId: 12,
+          laboratorioId: 1,
+          horarioId: 3,
+          fechaReserva: fechaValidaFutura
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.exito).toBe(false);
+      expect(res.body.error.codigo).toBe(CODIGOS_ERROR.TRANSICION_ESTADO_INVALIDA);
+    });
+
+    // Caso 3: Documentación incompleta (HTTP 400 y DOCUMENTACION_INCOMPLETA)
+    test('Caso 3: POST /api/reservas debe rechazar con 400 si falta documentación obligatoria', async () => {
+      jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue({
+        ...practicaAprobadaMock,
+        documentos: [
+          { id: 101, tipo: 'CONSENTIMIENTO_INFORMADO', nombreOriginal: 'consentimiento.pdf' }
+        ]
+      });
+
+      const res = await request(app)
+        .post('/api/reservas')
+        .set('Authorization', `Bearer ${estudianteReservaToken}`)
+        .send({
+          practicaId: 12,
+          laboratorioId: 1,
+          horarioId: 3,
+          fechaReserva: fechaValidaFutura
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.exito).toBe(false);
+      expect(res.body.error.codigo).toBe(CODIGOS_ERROR.DOCUMENTACION_INCOMPLETA);
+    });
+
+    // Caso 4: Estudiante no propietario (HTTP 403 y ACCESO_DENEGADO)
+    test('Caso 4: POST /api/reservas debe rechazar con 403 si la práctica pertenece a otro estudiante', async () => {
+      jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue(practicaAprobadaMock);
+
+      const res = await request(app)
+        .post('/api/reservas')
+        .set('Authorization', `Bearer ${otroEstudianteReservaToken}`)
+        .send({
+          practicaId: 12,
+          laboratorioId: 1,
+          horarioId: 3,
+          fechaReserva: fechaValidaFutura
+        });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.body.exito).toBe(false);
+      expect(res.body.error.codigo).toBe(CODIGOS_ERROR.ACCESO_DENEGADO);
+    });
+
+    // Caso 5: Conflicto de capacidad (HTTP 409 y RESERVA_NO_DISPONIBLE)
+    test('Caso 5: POST /api/reservas debe rechazar con 409 si la franja horaria ya no tiene cupo disponible', async () => {
+      jest.spyOn(prisma.practica, 'findUnique').mockResolvedValue(practicaAprobadaMock);
+      jest.spyOn(prisma.laboratorio, 'findUnique').mockResolvedValue(laboratorioMock);
+      jest.spyOn(prisma.horario, 'findUnique').mockResolvedValue(horarioMock);
+
+      jest.spyOn(prisma, '$transaction').mockImplementation(async (callback) => {
+        return callback({
+          $queryRaw: jest.fn().mockResolvedValue([{ id: 3 }]),
+          reserva: {
+            count: jest.fn().mockResolvedValue(1) // Capacidad = 1, reservasActivas >= 1
+          }
+        });
+      });
+
+      const res = await request(app)
+        .post('/api/reservas')
+        .set('Authorization', `Bearer ${estudianteReservaToken}`)
+        .send({
+          practicaId: 12,
+          laboratorioId: 1,
+          horarioId: 3,
+          fechaReserva: fechaValidaFutura
+        });
+
+      expect(res.statusCode).toBe(409);
+      expect(res.body.exito).toBe(false);
+      expect(res.body.error.codigo).toBe(CODIGOS_ERROR.RESERVA_NO_DISPONIBLE);
+    });
+
+    // Caso 6: Datos inválidos (HTTP 400 y DATOS_INVALIDOS)
+    test('Caso 6: POST /api/reservas debe rechazar con 400 si el payload contiene datos inválidos', async () => {
+      const res = await request(app)
+        .post('/api/reservas')
+        .set('Authorization', `Bearer ${estudianteReservaToken}`)
+        .send({
+          practicaId: -99,
+          laboratorioId: 1,
+          horarioId: 3,
+          fechaReserva: 'fecha-invalida'
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.exito).toBe(false);
+      expect(res.body.error.codigo).toBe(CODIGOS_ERROR.DATOS_INVALIDOS);
+    });
+  });
+
 });

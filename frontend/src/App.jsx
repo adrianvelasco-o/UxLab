@@ -12,6 +12,7 @@ import { PanelEstudiante } from './pages/PanelEstudiante.jsx';
 import { PracticasEstudiante } from './pages/PracticasEstudiante.jsx';
 import { DetallePractica } from './pages/DetallePractica.jsx';
 import { DisponibilidadLaboratorio } from './pages/DisponibilidadLaboratorio.jsx';
+import { SolicitudReserva } from './pages/SolicitudReserva.jsx';
 import './App.css';
 
 function EnrutadorPrincipal() {
@@ -54,20 +55,20 @@ function EnrutadorPrincipal() {
     );
   }
 
-  // 4. Ruta: Detalle y Gestión de Práctica del Estudiante (/estudiante/practica?id=...)
-  if (ruta.startsWith('/estudiante/practica')) {
-    return (
-      <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
-        <DetallePractica />
-      </RutaProtegida>
-    );
-  }
-
-  // 5. Ruta: Gestión de Prácticas del Estudiante (/estudiante/practicas)
+  // 4. Ruta: Gestión de Prácticas del Estudiante (/estudiante/practicas)
   if (ruta === RUTAS.ESTUDIANTE_PRACTICAS) {
     return (
       <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
         <PracticasEstudiante />
+      </RutaProtegida>
+    );
+  }
+
+  // 5. Ruta: Detalle y Gestión de Práctica del Estudiante (/estudiante/practica?id=...)
+  if (ruta.startsWith('/estudiante/practica?') || ruta === RUTAS.ESTUDIANTE_PRACTICA_DETALLE) {
+    return (
+      <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
+        <DetallePractica />
       </RutaProtegida>
     );
   }
@@ -86,6 +87,15 @@ function EnrutadorPrincipal() {
     return (
       <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
         <DisponibilidadLaboratorio />
+      </RutaProtegida>
+    );
+  }
+
+  // 8. Ruta: Solicitud de Reserva de Laboratorio (/estudiante/reservas/solicitar - PB10 / PB10-03)
+  if (ruta === RUTAS.ESTUDIANTE_RESERVA_SOLICITAR) {
+    return (
+      <RutaProtegida rolesPermitidos={['ESTUDIANTE']}>
+        <SolicitudReserva />
       </RutaProtegida>
     );
   }

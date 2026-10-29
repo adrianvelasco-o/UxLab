@@ -25,8 +25,34 @@ export async function obtenerLaboratoriosDisponibles(fecha) {
   return respuesta?.datos ?? [];
 }
 
+/**
+ * Radica una nueva solicitud de reserva de laboratorio para una prǭctica aprobada (PB10).
+ * Consume el endpoint real: POST /api/reservas
+ *
+ * @param {object} params
+ * @param {number} params.practicaId - ID de la prǭctica aprobada
+ * @param {number} params.laboratorioId - ID del laboratorio
+ * @param {number} params.horarioId - ID de la franja horaria
+ * @param {string} params.fechaReserva - Fecha en formato AAAA-MM-DD
+ * @returns {Promise<object>} Datos de la reserva creada
+ */
+export async function solicitarReserva({ practicaId, laboratorioId, horarioId, fechaReserva }) {
+  const respuesta = await clienteApi('/reservas', {
+    method: 'POST',
+    body: JSON.stringify({
+      practicaId,
+      laboratorioId,
+      horarioId,
+      fechaReserva
+    })
+  });
+
+  return respuesta?.datos;
+}
+
 export const reservasService = {
-  obtenerLaboratoriosDisponibles
+  obtenerLaboratoriosDisponibles,
+  solicitarReserva
 };
 
 export default reservasService;

@@ -110,19 +110,31 @@ export function DisponibilidadLaboratorio() {
 
       {/* Cabecera semántica con botón de retorno al panel (WCAG 2.4.3, 2.4.6) */}
       <header className="header-seccion-usuarios">
-        <div>
-          <button
-            type="button"
-            className="btn-volver-dashboard"
-            onClick={() => navegar(RUTAS.ESTUDIANTE, 'Panel Estudiante')}
-            aria-label="Volver al panel principal del estudiante"
-          >
-            ← Volver al Panel Estudiante
-          </button>
-          <h1>Disponibilidad del Laboratorio UX</h1>
-          <p className="subtitulo-seccion">
-            Consulte en tiempo real los espacios, franjas horarias y cupos disponibles para la ejecución de sus pruebas de usabilidad.
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
+          <div>
+            <button
+              type="button"
+              className="btn-volver-dashboard"
+              onClick={() => navegar(RUTAS.ESTUDIANTE, 'Panel Estudiante')}
+              aria-label="Volver al panel principal del estudiante"
+            >
+              ← Volver al Panel Estudiante
+            </button>
+            <h1>Disponibilidad del Laboratorio UX</h1>
+            <p className="subtitulo-seccion">
+              Consulte en tiempo real los espacios, franjas horarias y cupos disponibles para la ejecución de sus pruebas de usabilidad.
+            </p>
+          </div>
+          <div style={{ marginTop: '0.5rem' }}>
+            <button
+              type="button"
+              className="btn-nuevo-usuario"
+              onClick={() => navegar(RUTAS.ESTUDIANTE_RESERVA_SOLICITAR, 'Solicitar Reserva')}
+              aria-label="Ir a radicar una solicitud de reserva de laboratorio"
+            >
+              + Solicitar Reserva
+            </button>
+          </div>
         </div>
       </header>
 
@@ -263,53 +275,67 @@ export function DisponibilidadLaboratorio() {
                       </div>
                     ) : (
                       /* Tabla HTML semántica y responsive (sin tabIndex artificial ni roles redundantes) */
-                      <div className="tabla-responsive-wrap">
-                        <table className="tabla-usuarios" aria-label={`Franjas horarias y cupos de ${lab.nombre}`}>
-                          <thead>
-                            <tr>
-                              <th scope="col">Día</th>
-                              <th scope="col">Horario</th>
-                              <th scope="col">Estado</th>
-                              <th scope="col">Cupos Libres</th>
-                              <th scope="col">Capacidad</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {lab.horarios.map((horario) => {
-                              const esDisponible = horario.disponible ?? (horario.estado === 'DISPONIBLE');
-                              const badgeClase = esDisponible ? 'badge-aprobada' : 'badge-rechazada';
-                              const textoEstado = esDisponible ? 'Disponible' : 'Ocupado';
-                              const iconoEstado = esDisponible ? '✓' : '✕';
+                      <>
+                        <div className="tabla-responsive-wrap">
+                          <table className="tabla-usuarios" aria-label={`Franjas horarias y cupos de ${lab.nombre}`}>
+                            <thead>
+                              <tr>
+                                <th scope="col">Día</th>
+                                <th scope="col">Horario</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Cupos Libres</th>
+                                <th scope="col">Capacidad</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {lab.horarios.map((horario) => {
+                                const esDisponible = horario.disponible ?? (horario.estado === 'DISPONIBLE');
+                                const badgeClase = esDisponible ? 'badge-aprobada' : 'badge-rechazada';
+                                const textoEstado = esDisponible ? 'Disponible' : 'Ocupado';
+                                const iconoEstado = esDisponible ? '✓' : '✕';
 
-                              return (
-                                <tr key={horario.id}>
-                                  <td>
-                                    <strong>{horario.diaSemana || 'Día configurado'}</strong>
-                                  </td>
-                                  <td>
-                                    {formatearHora(horario.horaInicio)} – {formatearHora(horario.horaFin)}
-                                  </td>
-                                  <td>
-                                    {/* Cumplimiento WCAG 1.4.1: Texto explícito e icono distintivo, nunca solo color */}
-                                    <span className={`badge-estado ${badgeClase}`}>
-                                      <span aria-hidden="true" style={{ marginRight: '0.3rem', fontWeight: 'bold' }}>
-                                        {iconoEstado}
+                                return (
+                                  <tr key={horario.id}>
+                                    <td>
+                                      <strong>{horario.diaSemana || 'Día configurado'}</strong>
+                                    </td>
+                                    <td>
+                                      {formatearHora(horario.horaInicio)} – {formatearHora(horario.horaFin)}
+                                    </td>
+                                    <td>
+                                      {/* Cumplimiento WCAG 1.4.1: Texto explícito e icono distintivo, nunca solo color */}
+                                      <span className={`badge-estado ${badgeClase}`}>
+                                        <span aria-hidden="true" style={{ marginRight: '0.3rem', fontWeight: 'bold' }}>
+                                          {iconoEstado}
+                                        </span>
+                                        {textoEstado}
                                       </span>
-                                      {textoEstado}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <strong>{horario.cuposLibres ?? (esDisponible ? horario.cuposTotales : 0)}</strong>
-                                  </td>
-                                  <td>
-                                    {horario.cuposTotales ?? lab.capacidad ?? 1}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+                                    </td>
+                                    <td>
+                                      <strong>{horario.cuposLibres ?? (esDisponible ? horario.cuposTotales : 0)}</strong>
+                                    </td>
+                                    <td>
+                                      {horario.cuposTotales ?? lab.capacidad ?? 1}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Botón de acción para solicitar reserva directamente tras consultar cupos */}
+                        <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            className="btn-nuevo-usuario"
+                            onClick={() => navegar(RUTAS.ESTUDIANTE_RESERVA_SOLICITAR, 'Solicitar Reserva')}
+                            aria-label={`Solicitar reserva en el espacio ${lab.nombre}`}
+                          >
+                            Solicitar Reserva en este espacio →
+                          </button>
+                        </div>
+                      </>
                     )}
                   </article>
                 );
